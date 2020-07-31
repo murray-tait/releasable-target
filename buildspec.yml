@@ -1,4 +1,4 @@
-version: 2.0
+version: 0.2
 env:
   variable:
     "BUILD_VERSION": "${CODEBUILD_RESOLVED_SOURCE_VERSION:="XXXXXX"}"

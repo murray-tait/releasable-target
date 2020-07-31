@@ -1,6 +1,6 @@
 version: 0.2
 env:
-  variable:
+  variables:
     "BUILD_VERSION": "${CODEBUILD_RESOLVED_SOURCE_VERSION:="XXXXXX"}"
 phases:
   build:

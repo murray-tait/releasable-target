@@ -1,0 +1,14 @@
+version: 2.0
+env:
+  variable:
+    "BUILD_VERSION": "${CODEBUILD_RESOLVED_SOURCE_VERSION:="XXXXXX"}"
+phases:
+  build:
+    command:
+      - echo building here
+      - zip -ur dist.zip README.md
+  post_build:
+    command:
+      - aws s3 cp --no-progress dist.zip s3://${}/builds/releasable-target/objects/${BUILD_VERSION}/dist.zip
+      - aws s3 cp --no-progress dist.zip s3://${}/builds/releasable-target/refs/${CODEBUILD_WEBHOOK_TRIGGER}/dist.zip
+

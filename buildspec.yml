@@ -9,9 +9,14 @@ phases:
   build:
     commands:
       - echo building here
-      - zip -ur dist.zip README.md
+      - rm -rf target
+      - mkdir target
+      - cp src/main/bash/* target
+      - cd target
+      - zip -ur dist.zip handler
+      - cd ..
   post_build:
     commands:
-      - aws s3 cp --no-progress dist.zip s3://${S3_BUILD_BUCKET}/builds/releasable-target/objects/${SHA1_START}/${SHA1_END}/dist.zip
-      - aws s3 cp --no-progress dist.zip s3://${S3_BUILD_BUCKET}/builds/releasable-target/refs/${CODEBUILD_WEBHOOK_TRIGGER}/dist.zip
+      - aws s3 cp --no-progress target/dist.zip s3://${S3_BUILD_BUCKET}/builds/releasable-target/objects/${SHA1_START}/${SHA1_END}/dist.zip
+      - aws s3 cp --no-progress target/dist.zip s3://${S3_BUILD_BUCKET}/builds/releasable-target/refs/${CODEBUILD_WEBHOOK_TRIGGER}/dist.zip
 

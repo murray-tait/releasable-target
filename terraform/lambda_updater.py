@@ -35,3 +35,24 @@ def process_record(record):
     bucket = record["s3"]["bucket"]["name"]
     key = record["s3"]["object"]["key"]
     print("Checking {}/{}".format(bucket, key))
+
+    if we_should_care(key):
+        update_lambda(bucket, key)
+    else:
+        print("ignoring")
+
+def update_lambda(bucket, key):
+    client = boto3.client("lambda")
+
+    for function in FUNCTION_NAMES:
+        print("Updating {}".format(function))
+
+        client.update_function_code(
+            FunctionName=function,
+            S3Bucket = bucket,
+            S3Key = key
+        )
+
+def we_should_care(key):
+    path = "builds/{}/refs/branch/{}.zip".format(APPLICATION_NAME, BRANCH_NAME)
+    return key == path

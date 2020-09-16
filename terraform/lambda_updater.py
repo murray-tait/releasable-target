@@ -55,4 +55,5 @@ def update_lambda(bucket, key):
 
 def we_should_care(key):
     path = "builds/{}/refs/branch/{}/dist.zip".format(APPLICATION_NAME, BRANCH_NAME)
+    print("path: {}".format(path))
     return key == path

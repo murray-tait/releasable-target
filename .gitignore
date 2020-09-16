@@ -29,3 +29,4 @@ override.tf.json
 # example: *tfplan*
 dist.zip
 terraform/lambda_updater.zip
+src/main/terraform/lambda_updater.zip

@@ -1,3 +1,3 @@
 output "common_vars" {
-    value = module.common.all
+  value = module.common.all
 }

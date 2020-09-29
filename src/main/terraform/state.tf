@@ -1,9 +1,9 @@
 terraform {
-    required_version = ">= 0.12"
-    backend "s3" {
-        region         = "eu-west-1"
-        key            = "releasable-target/terraform.tfstate"
-        bucket         = "uk.co.urbanfortress.terraform" 
-        profile        = "973963482762_TerraformStateAccess"
-    }
+  required_version = ">= 0.12"
+  backend "s3" {
+    region  = "eu-west-1"
+    key     = "releasable-target/terraform.tfstate"
+    bucket  = "uk.co.urbanfortress.terraform"
+    profile = "973963482762_TerraformStateAccess"
+  }
 }

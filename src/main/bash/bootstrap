@@ -4,7 +4,27 @@ set -e
 
 echo started
 
-export
+for (( ; ; ))
+do
+    export REQUEST=$(curl -i -s "http://${AWS_LAMBDA_RUNTIME_API}/2018-06-01/runtime/invocation/next" | sed "s/\r/\n/")
+    
+    echo $REQUEST
+
+    REQUEST_ID=$(echo "$REQUEST" | grep Request-Id | sed "s/.*Request-Id: //")
+
+    echo "$REQUEST_ID"
+
+    echo http://${AWS_LAMBDA_RUNTIME_API}/2018-06-01/runtime/invocation/${REQUEST_ID}/response
+
+    RESPONSE=$(cat <<EOF
+    { "statusCode": 200, "headers": { }, "body": "{'message': 'message'}", "isBase64Encoded": false }
+EOF
+)
+
+    echo "$RESPONSE"
+
+    echo $(curl -s -X POST  "http://${AWS_LAMBDA_RUNTIME_API}/2018-06-01/runtime/invocation/${REQUEST_ID}/response" -d "${RESPONSE}")
+done
 
 echo finished
 

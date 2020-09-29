@@ -13,7 +13,7 @@ phases:
       - mkdir target
       - cp src/main/bash/* target
       - cd target
-      - zip -ur dist.zip handler
+      - zip -ur dist.zip bootstrap
       - cd ..
   post_build:
     commands:

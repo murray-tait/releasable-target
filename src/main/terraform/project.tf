@@ -1,5 +1,5 @@
 module "common" {
-  source           = "git@github.com:deathtumble/terraform_modules.git//modules/common?ref=v0.1.17"
+  source           = "git@github.com:deathtumble/terraform_modules.git//modules/common?ref=v0.1.19"
   application_name = "releasable-target"
   project_name     = "urbanfortress"
   tld              = "uk"
@@ -14,14 +14,14 @@ module "pipeline" {
 }
 
 module "api_gateway" {
-  source       = "../../../../../infra2/terraform/modules/api_gateway"
+  source       = "git@github.com:deathtumble/terraform_modules.git//modules/api_gateway?ref=v0.1.20"
   aws_region   = module.common.aws_region
   aws_profile  = module.common.aws_profile
   fqdn         = module.common.fqdn
   fqdn_no_app  = module.common.fqdn_no_app
   zone_id      = data.aws_route53_zone.environment.zone_id
   lambda       = aws_lambda_function.main
-  web_acl_name = "IPWhiteListWebACL"
+  web_acl_name = module.common.web_acl_name
   providers = {
     aws.global      = aws.global
   }

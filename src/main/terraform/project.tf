@@ -1,8 +1,8 @@
 module "common" {
-  source           = "git@github.com:deathtumble/terraform_modules.git//modules/common?ref=v0.1.15"
+  source           = "git@github.com:deathtumble/terraform_modules.git//modules/common?ref=v0.1.17"
   application_name = "releasable-target"
   project_name     = "urbanfortress"
-  application_tld  = ["uk"]
+  tld              = "uk"
 }
 
 module "pipeline" {

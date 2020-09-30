@@ -19,17 +19,15 @@ module "api_gateway" {
   aws_profile  = module.common.aws_profile
   fqdn         = module.common.fqdn
   fqdn_no_app  = module.common.fqdn_no_app
-  zone_id      = data.aws_route53_zone.parent.zone_id
+  zone_id      = data.aws_route53_zone.environment.zone_id
   lambda       = aws_lambda_function.main
   web_acl_name = "IPWhiteListWebACL"
   providers = {
     aws.global      = aws.global
-    aws.dns_account = aws.dns_account
   }
 }
 
-data "aws_route53_zone" "parent" {
-  name     = "${module.common.fqdn_no_env}."
-  provider = aws.dns_account
+data "aws_route53_zone" "environment" {
+  name     = module.common.fqdn_no_app
 }
 

@@ -5,51 +5,6 @@ module "common" {
   application_tld  = ["uk"]
 }
 
-resource "aws_lambda_function" "main" {
-  function_name = var.application_name
-  runtime       = "provided"
-  handler       = "handler"
-  timeout       = "30"
-  role          = aws_iam_role.lambda_service_role.arn
-  s3_bucket     = module.common.destination_builds_bucket_name
-  s3_key        = "builds/${var.application_name}/refs/branch/${terraform.workspace}/dist.zip"
-
-}
-
-resource "aws_iam_role" "lambda_service_role" {
-  name               = "LambdaserviceRole.${var.application_name}"
-  assume_role_policy = data.template_file.lambda_service_role.rendered
-}
-
-#######################################
-
-resource "aws_iam_policy" "lambda_log_access" {
-  name   = "AllowLambdaToWriteToLogs.${var.application_name}"
-  policy = data.template_file.lambda_service_policy.rendered
-}
-
-# Attach the policy that allows lambda to access cloudwatch logs
-resource "aws_iam_role_policy_attachment" "lambda_log_access" {
-  role       = aws_iam_role.lambda_service_role.name
-  policy_arn = aws_iam_policy.lambda_log_access.arn
-}
-
-# Define a policy that allows lambda to every it needs
-data "template_file" "lambda_service_policy" {
-  template = file("policies/lambda_service_policy.json")
-}
-
-##########################################
-
-data "template_file" "lambda_service_role" {
-  template = file("policies/lambda_service_role.json")
-}
-
-data "aws_route53_zone" "parent" {
-  name     = "${module.common.fqdn_no_env}."
-  provider = aws.dns_account
-}
-
 module "pipeline" {
   source                                     = "git@github.com:deathtumble/terraform_modules.git//modules/lambda_pipeline?ref=v0.1.7"
   application_name                           = "releasable_target"
@@ -72,3 +27,9 @@ module "api_gateway" {
     aws.dns_account = aws.dns_account
   }
 }
+
+data "aws_route53_zone" "parent" {
+  name     = "${module.common.fqdn_no_env}."
+  provider = aws.dns_account
+}
+

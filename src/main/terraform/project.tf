@@ -23,11 +23,11 @@ module "api_gateway" {
   lambda       = aws_lambda_function.main
   web_acl_name = module.common.web_acl_name
   providers = {
-    aws.global      = aws.global
+    aws.global = aws.global
   }
 }
 
 data "aws_route53_zone" "environment" {
-  name     = module.common.fqdn_no_app
+  name = module.common.fqdn_no_app
 }
 

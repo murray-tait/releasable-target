@@ -14,7 +14,7 @@ module "pipeline" {
 }
 
 module "api_gateway" {
-  source       = "git@github.com:deathtumble/terraform_modules.git//modules/api_gateway?ref=v0.1.20"
+  source       = "git@github.com:deathtumble/terraform_modules.git//modules/api_gateway?ref=v0.1.21"
   aws_region   = module.common.aws_region
   aws_profile  = module.common.aws_profile
   fqdn         = module.common.fqdn

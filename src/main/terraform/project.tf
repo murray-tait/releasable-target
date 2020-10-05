@@ -1,13 +1,17 @@
+locals {
+  application_name = "releasable-target"
+}
+
 module "common" {
   source           = "git@github.com:deathtumble/terraform_modules.git//modules/common?ref=v0.1.19"
-  application_name = "releasable-target"
+  application_name = local.application_name
   project_name     = "urbanfortress"
   tld              = "uk"
 }
 
-module "pipeline" {
+module "lambda_pipeline" {
   source                                     = "git@github.com:deathtumble/terraform_modules.git//modules/lambda_pipeline?ref=v0.1.7"
-  application_name                           = "releasable_target"
+  application_name                           = local.application_name
   destination_builds_bucket_name             = module.common.destination_builds_bucket_name
   lambdas                                    = [aws_lambda_function.main]
   aws_sns_topic_api_upload_subscription_name = module.common.aws_sns_topic_env_build_notification_name
@@ -30,4 +34,3 @@ module "api_gateway" {
 data "aws_route53_zone" "environment" {
   name = module.common.fqdn_no_app
 }
-

@@ -28,3 +28,12 @@ module "web" {
     local.app_config
   )
 }
+
+module "cloudfront_pipeline" {
+  source           = "../../../../../infra2/terraform/modules/cloudfront_pipeline"
+  fqdn         = "web${module.common.fqdn}"
+  destination_builds_bucket_name = module.common.destination_builds_bucket_name
+  application_name = local.application_name
+  branch_name = terraform.workspace
+  artifacts_bucket_name = module.common.artifacts_bucket_name
+}

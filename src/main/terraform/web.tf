@@ -1,4 +1,8 @@
 locals {
+  build_artifact_key = "builds/${local.application_name}/refs/branch/${terraform.workspace}/cloudfront.zip"
+}
+
+locals {
   config = {
     REACT_APP_API_ENDPOINT                     = "https://${var.application_name}-api.${module.common.fqdn_no_app}/query"
     REACT_APP_PRIMARY_SLDN                     = module.common.fqdn_no_app
@@ -36,4 +40,5 @@ module "cloudfront_pipeline" {
   application_name = local.application_name
   branch_name = terraform.workspace
   artifacts_bucket_name = module.common.artifacts_bucket_name
+  build_artifact_key = local.build_artifact_key
 }

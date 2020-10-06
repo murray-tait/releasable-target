@@ -14,9 +14,12 @@ phases:
       - cp src/main/bash/* target
       - cd target
       - zip -ur dist.zip bootstrap
+      - zip -ur cloudfront.zip ../src/main/web/*
       - cd ..
   post_build:
     commands:
       - aws s3 cp --no-progress target/dist.zip s3://${S3_BUILD_BUCKET}/builds/releasable-target/objects/${SHA1_START}/${SHA1_END}/dist.zip
+      - aws s3 cp --no-progress target/cloudfront.zip s3://${S3_BUILD_BUCKET}/builds/releasable-target/objects/${SHA1_START}/${SHA1_END}/cloudfront.zip
       - aws s3 cp --no-progress target/dist.zip s3://${S3_BUILD_BUCKET}/builds/releasable-target/refs/${CODEBUILD_WEBHOOK_TRIGGER}/dist.zip
+      - aws s3 cp --no-progress target/cloudfront.zip s3://${S3_BUILD_BUCKET}/builds/releasable-target/refs/${CODEBUILD_WEBHOOK_TRIGGER}/cloudfront.zip
 

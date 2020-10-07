@@ -35,3 +35,4 @@ src/main/terraform/graph.dot
 graph.xml
 graph.dot
 graphviz2drawio
+src/main/web/build.js

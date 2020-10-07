@@ -8,6 +8,7 @@ phases:
 
   build:
     commands:
+      - bin/create_build_file
       - echo building here
       - rm -rf target
       - mkdir target
@@ -19,7 +20,7 @@ phases:
       - cd ../..
       - # web component
       - mkdir target/web
-      - cp src/main/web/* target/web
+      - rsync --exclude='config.js' src/main/web/* target/web
       - cd target/web
       - zip -ur ../cloudfront.zip *
       - cd ../..

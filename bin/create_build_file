@@ -2,14 +2,11 @@
 
 set -e
 
-export DIRTY="true"
-if [ -z "${CODEBUILD_START_TIME}" ]; then export CODEBUILD_START_TIME=$(date '+%d/%m/%Y %H:%M:%S'); fi
-if [ -z "${CODEBUILD_RESOLVED_SOURCE_VERSION}" ]; then export CODEBUILD_RESOLVED_SOURCE_VERSION=$(git rev-parse HEAD); fi
+export DIRTY="false"
 
 if [ -z "${CODEBUILD_START_TIME}" ]; then
+    export CODEBUILD_RESOLVED_SOURCE_VERSION=$(git rev-parse HEAD);
     export CODEBUILD_START_TIME=$(date '+%d/%m/%Y %H:%M:%S')
-    if [ $(git status --porcelain) == "" ]; then export DIRTY="false"; fi
-else 
     export CODEBUILD_WEBHOOK_TRIGGER="manual"
     export CODEBUILD_BUILD_ID="n/a"
     export CODEBUILD_BUILD_IMAGE="n/a"
@@ -18,6 +15,7 @@ else
     export CODEBUILD_LOG_PATH="n/a"
     export CODEBUILD_SOURCE_REPO_URL="n/a"
     export CODEBUILD_SOURCE_VERSION=$(git branch --show-current)
+    if [ $(git status --porcelain) == "" ]; then export DIRTY="false"; fi
 fi
 
 envsubst < src/main/web/build.template > src/main/web/build.js

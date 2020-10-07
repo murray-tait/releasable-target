@@ -36,3 +36,4 @@ graph.xml
 graph.dot
 graphviz2drawio
 src/main/web/build.js
+src/main/web/config.js

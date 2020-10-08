@@ -34,7 +34,7 @@ module "web" {
 }
 
 module "cloudfront_pipeline" {
-  source           = "../../../../../infra2/terraform/modules/cloudfront_pipeline"
+  source       = "git@github.com:deathtumble/terraform_modules.git//modules/cloudfront_pipeline?ref=v0.1.26"
   fqdn         = "web${module.common.fqdn}"
   destination_builds_bucket_name = module.common.destination_builds_bucket_name
   application_name = local.application_name

@@ -20,14 +20,22 @@ phases:
       - cd ../..
       - # web component
       - mkdir target/web
-      - rsync --exclude='config.js' src/main/web/* target/web
+      - rsync -a --exclude='config.js' src/main/web/* target/web
       - cd target/web
       - zip -ur ../cloudfront.zip *
+      - cd ../..
+      - # terra component
+      - mkdir target/terraform
+      - rsync -a --exclude='.*' --exclude='.*' --exclude='graph.*' src/main/terraform/* target/terraform
+      - cd target/terraform
+      - zip -ur ../terraform.zip *
       - cd ../..
   post_build:
     commands:
       - aws s3 cp --no-progress target/dist.zip s3://${S3_BUILD_BUCKET}/builds/releasable-target/objects/${SHA1_START}/${SHA1_END}/dist.zip
       - aws s3 cp --no-progress target/cloudfront.zip s3://${S3_BUILD_BUCKET}/builds/releasable-target/objects/${SHA1_START}/${SHA1_END}/cloudfront.zip
+      - aws s3 cp --no-progress target/terraform.zip s3://${S3_BUILD_BUCKET}/builds/releasable-target/objects/${SHA1_START}/${SHA1_END}/terraform.zip
       - aws s3 cp --no-progress target/dist.zip s3://${S3_BUILD_BUCKET}/builds/releasable-target/refs/${CODEBUILD_WEBHOOK_TRIGGER}/dist.zip
       - aws s3 cp --no-progress target/cloudfront.zip s3://${S3_BUILD_BUCKET}/builds/releasable-target/refs/${CODEBUILD_WEBHOOK_TRIGGER}/cloudfront.zip
+      - aws s3 cp --no-progress target/terraform.zip s3://${S3_BUILD_BUCKET}/builds/releasable-target/refs/${CODEBUILD_WEBHOOK_TRIGGER}/terraform.zip
 

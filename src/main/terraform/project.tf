@@ -3,7 +3,8 @@ locals {
 }
 
 module "common" {
-  source           = "git@github.com:deathtumble/terraform_modules.git//modules/common?ref=v0.1.24"
+  source           = "git@github.com:deathtumble/terraform_modules.git//modules/common?ref=v0.1.29"
+#  source           = "../terraform/modules/common"
   application_name = local.application_name
   project_name     = "urbanfortress"
   tld              = "uk"
@@ -18,7 +19,7 @@ module "lambda_pipeline" {
 }
 
 module "api_gateway" {
-  source       = "git@github.com:deathtumble/terraform_modules.git//modules/api_gateway?ref=v0.1.21"
+  source       = "git@github.com:deathtumble/terraform_modules.git//modules/api_gateway?ref=v0.1.29"
   aws_region   = module.common.aws_region
   aws_profile  = module.common.aws_profile
   fqdn         = module.common.fqdn

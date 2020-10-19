@@ -15,7 +15,7 @@ locals {
     REACT_APP_AWS_COGNITO_COOKIE_SECURE        = tobool(true)
   }
   app_config = {
-    REACT_APP_API_ENDPOINT                     = "https://${var.application_name}-api.${module.common.fqdn_no_app}/query"
+    REACT_APP_API_ENDPOINT = "https://${var.application_name}-api.${module.common.fqdn_no_app}/query"
   }
 }
 
@@ -34,11 +34,11 @@ module "web" {
 }
 
 module "cloudfront_pipeline" {
-  source       = "git@github.com:deathtumble/terraform_modules.git//modules/cloudfront_pipeline?ref=v0.1.29"
-  fqdn         = "web${module.common.fqdn}"
+  source                         = "git@github.com:deathtumble/terraform_modules.git//modules/cloudfront_pipeline?ref=v0.1.29"
+  fqdn                           = "web${module.common.fqdn}"
   destination_builds_bucket_name = module.common.destination_builds_bucket_name
-  application_name = local.application_name
-  branch_name = terraform.workspace
-  artifacts_bucket_name = module.common.artifacts_bucket_name
-  build_artifact_key = local.build_artifact_key
+  application_name               = local.application_name
+  branch_name                    = terraform.workspace
+  artifacts_bucket_name          = module.common.artifacts_bucket_name
+  build_artifact_key             = local.build_artifact_key
 }

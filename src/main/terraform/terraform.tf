@@ -3,16 +3,17 @@ locals {
 }
 
 module "terraform_pipeline" {
-  source       = "git@github.com:deathtumble/terraform_modules.git//modules/terraform_pipeline?ref=v0.1.35"
-#  source           = "../../../../../infra2/terraform/modules/terraform_pipeline"
+   source       = "git@github.com:deathtumble/terraform_modules.git//modules/terraform_pipeline?ref=v0.1.37"
+#  source                         = "../../../../../infra2/terraform/modules/terraform_pipeline"
   destination_builds_bucket_name = module.common.destination_builds_bucket_name
-  application_name = local.application_name
-  policy_arn = aws_iam_policy.terraform_policy.arn
-  build_artifact_key = local.terraform_build_artifact_key
-  aws_region   = module.common.aws_region
-  repo_token   = local.repo_token
-  terraform_bucket_name = module.common.terraform_bucket_name
-  terraform_dynamodb_table = module.common.terraform_dynamodb_table
+  application_name               = local.application_name
+  policy_arn                     = aws_iam_policy.terraform_policy.arn
+  build_artifact_key             = local.terraform_build_artifact_key
+  aws_region                     = module.common.aws_region
+  repo_token                     = local.repo_token
+  terraform_bucket_name          = module.common.terraform_bucket_name
+  terraform_dynamodb_table       = module.common.terraform_dynamodb_table
+  aws_account_id                 = module.common.aws_account_id
 }
 
 data "aws_secretsmanager_secret_version" "repo_token" {
@@ -24,7 +25,7 @@ locals {
 }
 
 resource "aws_iam_policy" "terraform_policy" {
-  name   = "TerraformAccessTo${local.application_name}Resources"
+  name   = "${local.application_name}-terraform-pipeline-BulkResourcesAcccess"
   policy = data.template_file.terraform_policy.rendered
 }
 

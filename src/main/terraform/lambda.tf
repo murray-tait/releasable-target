@@ -4,12 +4,30 @@ resource "aws_iam_role_policy_attachment" "lambda_log_access" {
 }
 
 resource "aws_iam_policy" "lambda_log_access" {
-  name   = "AllowLambdaToWriteToLogs.${var.application_name}"
-  policy = data.template_file.lambda_service_policy.rendered
-}
-
-data "template_file" "lambda_service_policy" {
-  template = file("policies/lambda_service_policy.json")
+  name   = "${var.application_name}-lambda-CloudWatchWriteAccess"
+  policy = <<-EOT
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Action": [
+            "logs:PutLogEvents",
+            "logs:CreateLogGroup"
+          ],
+          "Resource": "arn:aws:logs:${module.common.aws_region}:${module.common.aws_account_id}:${aws_lambda_function.main.function_name}",
+          "Effect": "Allow"
+        },
+        {
+          "Action": [
+            "xray:PutTraceSegments",
+            "xray:PutTelemetryRecords"
+          ],
+          "Resource": "*",
+          "Effect": "Allow"
+        }
+      ]
+    }
+EOT
 }
 
 #################################################################
@@ -25,7 +43,7 @@ resource "aws_lambda_function" "main" {
 }
 
 resource "aws_iam_role" "lambda_service_role" {
-  name               = "LambdaserviceRole.${var.application_name}"
+  name               = "${var.application_name}-lambda-executeRole"
   assume_role_policy = data.template_file.lambda_service_role.rendered
 }
 
@@ -33,4 +51,7 @@ data "template_file" "lambda_service_role" {
   template = file("policies/lambda_service_role.json")
 }
 
-
+resource "aws_cloudwatch_log_group" "lambda" {
+  name              = "/aws/lambda/${aws_lambda_function.main.function_name}"
+  retention_in_days = 14
+}

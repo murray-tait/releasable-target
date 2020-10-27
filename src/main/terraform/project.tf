@@ -3,7 +3,7 @@ locals {
 }
 
 module "common" {
-  source = "git@github.com:deathtumble/terraform_modules.git//modules/common?ref=v0.1.40"
+  source = "git@github.com:deathtumble/terraform_modules.git//modules/common?ref=v0.1.41"
 #  source           = "../../../../../infra2/terraform/modules/common"
   application_name = local.application_name
   project_name     = "urbanfortress"
@@ -11,16 +11,17 @@ module "common" {
 }
 
 module "lambda_pipeline" {
-  source                                     = "git@github.com:deathtumble/terraform_modules.git//modules/lambda_pipeline?ref=v0.1.40"
+  source                                     = "git@github.com:deathtumble/terraform_modules.git//modules/lambda_pipeline?ref=v0.1.41"
 #  source                         = "../../../../../infra2/terraform/modules/lambda_pipeline"
   application_name                           = local.application_name
   destination_builds_bucket_name             = module.common.destination_builds_bucket_name
   lambdas                                    = [aws_lambda_function.main]
   aws_sns_topic_env_build_notification_name = module.common.aws_sns_topic_env_build_notification_name
+  aws_account_id                            = module.common.aws_account_id  
 }
 
 module "api_gateway" {
-  source       = "git@github.com:deathtumble/terraform_modules.git//modules/api_gateway?ref=v0.1.40"
+  source       = "git@github.com:deathtumble/terraform_modules.git//modules/api_gateway?ref=v0.1.41"
 #  source                         = "../../../../../infra2/terraform/modules/api_gateway"
   aws_region   = module.common.aws_region
   aws_profile  = module.common.aws_profile

@@ -3,7 +3,7 @@ locals {
 }
 
 module "terraform_pipeline" {
-  source       = "git@github.com:deathtumble/terraform_modules.git//modules/terraform_pipeline?ref=v0.1.39"
+  source       = "git@github.com:deathtumble/terraform_modules.git//modules/terraform_pipeline?ref=v0.1.40"
 #  source                         = "../../../../../infra2/terraform/modules/terraform_pipeline"
   destination_builds_bucket_name = module.common.destination_builds_bucket_name
   application_name               = local.application_name
@@ -15,6 +15,7 @@ module "terraform_pipeline" {
   cloudtrails_logs_bucket_name   = module.common.cloudtrails_logs_bucket_name
   terraform_dynamodb_table       = module.common.terraform_dynamodb_table
   aws_account_id                 = module.common.aws_account_id
+  terraform_state_role_arn       = module.common.terraform_state_role_arn
 }
 
 data "aws_secretsmanager_secret_version" "repo_token" {

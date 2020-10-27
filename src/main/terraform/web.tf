@@ -20,7 +20,7 @@ locals {
 }
 
 module "web" {
-  source       = "git@github.com:deathtumble/terraform_modules.git//modules/web?ref=v0.1.39"
+  source       = "git@github.com:deathtumble/terraform_modules.git//modules/web?ref=v0.1.40"
 #  source                         = "../../../../../infra2/terraform/modules/web"
   aws_profile  = module.common.aws_profile
   fqdn         = "web${module.common.fqdn}"
@@ -35,7 +35,7 @@ module "web" {
 }
 
 module "cloudfront_pipeline" {
-  source                         = "git@github.com:deathtumble/terraform_modules.git//modules/cloudfront_pipeline?ref=v0.1.39"
+  source                         = "git@github.com:deathtumble/terraform_modules.git//modules/cloudfront_pipeline?ref=v0.1.40"
 #  source                         = "../../../../../infra2/terraform/modules/cloudfront_pipeline"
   fqdn                           = "web${module.common.fqdn}"
   destination_builds_bucket_name = module.common.destination_builds_bucket_name

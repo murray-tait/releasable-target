@@ -7,6 +7,6 @@ terraform {
     profile        = "973963482762_TerraformStateAccess"
     dynamodb_table = "uk.co.urbanfortress.terraform.lock"
     acl            = "bucket-owner-full-control"
-    #role_arn      = "arn:aws:iam::973963482762:role/TerraformStateAccessRole"
+    #role_arn      = "arn:aws:iam::973963482762:role/TerraformStateAccess"
   }
 }

@@ -35,7 +35,8 @@
           "cloudformation:*",
           "rds:*",
           "sqs:*",
-          "ecs:*"
+          "ecs:*",
+          "logs:DescribeLogGroups"
         ],
         "Resource": "*",
         "Effect": "Allow"

@@ -36,7 +36,8 @@
           "rds:*",
           "sqs:*",
           "ecs:*",
-          "logs:DescribeLogGroups"
+          "logs:DescribeLogGroups",
+          "logs:ListTagsLogGroup"
         ],
         "Resource": "*",
         "Effect": "Allow"

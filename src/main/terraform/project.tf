@@ -3,11 +3,15 @@ locals {
 }
 
 module "common" {
-  source = "git@github.com:deathtumble/terraform_modules.git//modules/common?ref=v0.1.45"
-  #  source           = "../../../../../infra2/terraform/modules/common"
+  source = "git@github.com:deathtumble/terraform_modules.git//modules/common?ref=v0.1.50"
+#  source           = "../../../../../infra2/terraform/modules/common"
   application_name = local.application_name
   project_name     = "urbanfortress"
   tld              = "uk"
+
+  providers = {
+    aws.account_description = aws.account_description
+  }
 }
 
 module "lambda_pipeline" {

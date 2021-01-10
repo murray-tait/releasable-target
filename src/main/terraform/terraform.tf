@@ -23,7 +23,7 @@ data "aws_secretsmanager_secret_version" "repo_token" {
 }
 
 locals {
-  repo_token = "${jsondecode(data.aws_secretsmanager_secret_version.repo_token.secret_string)["github_token"]}"
+  repo_token = jsondecode(data.aws_secretsmanager_secret_version.repo_token.secret_string)["github_token"]
 }
 
 resource "aws_iam_policy" "terraform_policy" {

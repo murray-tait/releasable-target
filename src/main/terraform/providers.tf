@@ -23,5 +23,5 @@ provider "aws" {
   alias = "account_description"
   region  = "eu-west-1"
   version = "~> 3.11"
-  profile = "973963482762_AccountDescriptionAccess"
+  profile = "${var.account-description-account-id}_AccountDescriptionAccess"
 }

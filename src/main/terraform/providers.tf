@@ -17,5 +17,5 @@ provider "archive" {
 
 provider "myaws" {
   region  = "eu-west-1"
-  profile = "453254632971_ListAccountsAccess"
+  profile = "${var.master_account_id}_ListAccountsAccess"
 }

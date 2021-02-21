@@ -3,7 +3,7 @@ variable "application_name" {
   default = "releasable-target"
 }
 
-variable "account-description-account-id" {
-    type = string
-    default = "973963482762"
+variable "master_account_id" {
+  type    = string
+  default = "453254632971"
 }

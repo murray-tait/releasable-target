@@ -78,7 +78,7 @@ resource "aws_api_gateway_integration" "releasable" {
   content_handling        = null
 
   depends_on = [
-      data.aws_api_gateway_rest_api.external_api
+    data.aws_api_gateway_rest_api.external_api
   ]
 }
 

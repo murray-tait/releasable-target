@@ -3,8 +3,8 @@ locals {
 }
 
 module "terraform_pipeline" {
-  source       = "git@github.com:deathtumble/terraform_modules.git//modules/terraform_pipeline?ref=v0.1.45"
-#  source                         = "../../../../../infra2/terraform/modules/terraform_pipeline"
+  source = "git@github.com:deathtumble/terraform_modules.git//modules/terraform_pipeline?ref=v0.1.45"
+  #  source                         = "../../../../../infra2/terraform/modules/terraform_pipeline"
   destination_builds_bucket_name = module.common.destination_builds_bucket_name
   application_name               = local.application_name
   policy_arn                     = aws_iam_policy.terraform_policy.arn

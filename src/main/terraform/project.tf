@@ -3,7 +3,7 @@ locals {
 }
 
 module "common" {
-  source = "git@github.com:deathtumble/terraform_modules.git//modules/common?ref=v0.2.5"
+  source = "git@github.com:deathtumble/terraform_modules.git//modules/common?ref=v0.2.6"
   # source           = "../../../../../infra2/terraform/modules/common"
   application_name  = local.application_name
   project_name      = "urbanfortress"

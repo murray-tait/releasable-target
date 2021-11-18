@@ -14,8 +14,8 @@ if [ -z "${CODEBUILD_START_TIME}" ]; then
     export CODEBUILD_INITIATOR="n/a"
     export CODEBUILD_LOG_PATH="n/a"
     export CODEBUILD_SOURCE_REPO_URL="n/a"
-    export CODEBUILD_SOURCE_VERSION=$(git branch --show-current)
-    if [ $(git status --porcelain) == "" ]; then export DIRTY="false"; fi
+    export CODEBUILD_SOURCE_VERSION=$(git rev-parse --abbrev-ref HEAD)
+    if [ "$(git status --porcelain)" == "" ]; then export DIRTY="false"; fi
 fi
 
 envsubst < src/main/web/build.template > src/main/web/build.js

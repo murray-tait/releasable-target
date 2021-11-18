@@ -1,0 +1,15 @@
+{
+  "language": "python",
+  "app": "pipenv run python main.py",
+  "terraformProviders": ["aws@~> 2.0"],
+  "output": "../terraform",
+  "codeMakerOutput": "imports",
+  "context": {
+    "excludeStackIdFromLogicalIds": "true",
+    "allowSepCharsInLogicalIds": "true",
+    "appName": "releasable",
+    "accountsProfile": "453254632971_ListAccountsAccess",
+    "use_terraform_state_role_arn": false,
+    "top_level_domain_name": "org.murraytait.experiment"
+  }
+}

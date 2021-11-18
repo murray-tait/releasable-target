@@ -38,3 +38,5 @@ graphviz2drawio
 src/main/web/build.js
 src/main/web/config.js
 target
+src/main/cdk/imports/*
+src/main/terraform/cdk.tf.json

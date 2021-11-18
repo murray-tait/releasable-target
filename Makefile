@@ -1,4 +1,19 @@
+CODEBUILD_SOURCE_VERSION ?= $(shell git rev-parse HEAD)
+SHA1_START := $(shell echo ${CODEBUILD_SOURCE_VERSION} | cut -c -2)
+SHA1_END := $(shell echo ${CODEBUILD_SOURCE_VERSION} | cut -c 3-)
+S3_BUILD_BUCKET ?= org.murraytait.experiment.build.builds
+AWS_PROFILE ?= "973963482762_AWSPowerUserAccess"
+CODEBUILD_WEBHOOK_TRIGGER ?= branch/$(shell git rev-parse --abbrev-ref HEAD)
+ARTIFACT_NAME := pdsfhirapi
+GIT_CHANGES = $(shell git diff --stat)
+GIT_DIRTY ?= $(if ${GIT_CHANGES},true,false)
+
+GITHUB_REF ?= refs/heads$(shell echo ${CODEBUILD_WEBHOOK_TRIGGER} | cut -c 7-)
+CODEBUILD_UUID := $(shell cat /proc/sys/kernel/random/uuid)
+CODEBUILD_BUILD_ID ?= uk-nhs-devspineservices-pdspoc:${CODEBUILD_UUID}
+
 build_dir := ${CURDIR}/target
+
 default:
 
 ${build_dir}/terraform.zip: src/main/terraform/*
@@ -13,7 +28,7 @@ ${build_dir}/lambda.zip: src/main/bash/*
 	rm -rf target/lambda/*
 	rm -f $@
 	cp src/main/bash/* target/lambda
-	cd target/terraform && zip -ur ../lambda.zip * && cd ../..
+	cd target/lambda && zip -ur ../lambda.zip * && cd ../..
 
 ${build_dir}/web.zip: src/main/web/*
 	mkdir -p ${build_dir}/web

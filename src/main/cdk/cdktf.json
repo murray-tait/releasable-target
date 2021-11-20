@@ -1,14 +1,18 @@
 {
   "language": "python",
   "app": "pipenv run python main.py",
-  "terraformProviders": ["aws@~> 2.0"],
   "output": "../terraform",
   "codeMakerOutput": "imports",
+  "terraformProvider": [
+    "hashicorp/archive@~> 1.3.0",
+    "hashicorp/aws@~> 3.29.0",
+    "hashicorp/template@~> 2.2.0"
+  ],
   "context": {
     "excludeStackIdFromLogicalIds": "true",
     "allowSepCharsInLogicalIds": "true",
-    "appName": "releasable",
-    "accountsProfile": "453254632971_ListAccountsAccess",
+    "app_name": "releasable",
+    "accounts_profile": "453254632971_ListAccountsAccess",
     "use_terraform_state_role_arn": false,
     "top_level_domain_name": "org.murraytait.experiment"
   }

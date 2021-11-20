@@ -16,9 +16,3 @@ provider "aws" {
 
 provider "archive" {
 }
-
-provider "myaws" {
-  region  = "eu-west-1"
-  profile = "${var.master_account_id}_ListAccountsAccess"
-  #assume_role { role_arn = "arn:aws:iam::481652375433:role/OrganizationAccountAccessRole" }
-}

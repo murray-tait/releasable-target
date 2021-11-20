@@ -1,118 +1,29 @@
 #!/usr/bin/env python
-from constructs import Construct, Node
+from constructs import Construct
 from cdktf import App, TerraformStack, TerraformLocal, S3Backend
 
 import boto3
 import traceback
 import sys
-import os
+
+from config import get_config
+from BaseStack import BaseStack
 
 
-def get_config(scope, environment_name, context_name, default=None):
-    node = Node.of(scope)
-    config = os.environ.get(environment_name)
-    config = config or node.try_get_context(context_name) or default
-    return config
+class MyStack(BaseStack):
 
+    def __init__(self, scope: Construct):
+        super().__init__(scope)
 
-class MyStack(TerraformStack):
-
-    def __init__(self, scope: Construct, ns: str):
-        super().__init__(scope, ns)
-
-        tldn = get_config(scope, "CDKTF_TOP_LEVEL_DOMAIN_NAME")
-
-        terraform_state_account_name, terraform_state_account_id, locals = self.derive_from_account_tags(
-            scope)
-
-        locals["domain"] = tldn
-
-        for key, value in locals.items():
-            TerraformLocal(self, key, value)
-
-        bucket = tldn + '.' + \
-            terraform_state_account_name + '.terraform'
-        dynamo_table = tldn + '.' + \
-            terraform_state_account_name + '.terraform.lock'
-
-        backend_args = {
-            'scope': self, 'region': "eu-west-1",
-            'key': ns + '/terraform.tfstate',
-
-            'bucket': bucket,
-            'dynamodb_table': dynamo_table,
-            'acl': "bucket-owner-full-control"
-        }
-
-        use_terraform_state_role_arn = get_config(
-            scope, 'CDKTF_USE_TERRAFORM_STATE_ROLE_ARN')
-        if use_terraform_state_role_arn:
-            backend_args["role_arn"] = 'arn:aws:iam::' + \
-                terraform_state_account_id + ':role/TerraformStateAccess'
-        else:
-            backend_args['profile'] = terraform_state_account_id + \
-                "_TerraformStateAccess"
-
-        S3Backend(**backend_args)
-
-    def derive_from_account_tags(self, scope):
-        accounts_profile = get_config(scope, 'CDKTF_ACCOUNT_PROFILE')
-        environment = self.get_environment(scope)
-
-        locals = {}
-
-        terraform_state_account_name = ''
-        terraform_state_account_id = ''
-        session = boto3.Session(profile_name=accounts_profile)
-        client = session.client('organizations')
-
-        accounts = client.list_accounts()['Accounts']
-
-        account_ids = {}
-        for account in accounts:
-            account_ids[account['Name']] = account['Id']
-
-        for account in accounts:
-            account_name = account['Name']
-            account_id = account['Id']
-
-            if account_name == environment:
-                locals["aws_account_id"] = account_id
-
-            tags = client.list_tags_for_resource(ResourceId=account_id)
-
-            for tag in tags['Tags']:
-                key = tag['Key'].replace('-', '_')
-                value = tag['Value']
-                children_key = key + '_children_account_ids'
-                local_account_id_key = key + '_account_id'
-                local_account_name_key = key + "_account_name"
-
-                if value == environment:
-                    if children_key not in locals:
-                        locals[children_key] = []
-                    locals[children_key].append(account_id)
-
-                if account_name == environment:
-                    locals[local_account_id_key] = account_ids[value]
-                    locals[local_account_name_key] = value
-                    if key == 'terraform_state':
-                        terraform_state_account_id = account_ids[value]
-                        terraform_state_account_name = value
-
-        return terraform_state_account_name, terraform_state_account_id, locals
-
-    def get_environment(self, scope):
-        environment = None
-        with open(scope.outdir + '/.terraform/environment', 'r') as reader:
-            environment = reader.read()
-        return environment
+    def populate(self):
+        super().populate()
 
 
 app = App()
-app_name = get_config(app, 'CDKTF_APP_NAME', 'appName', 'environment')
 try:
-    stack = MyStack(app, app_name)
+    stack = MyStack(app)
+    stack.populate()
+    app.synth()
 except Exception as e:
     try:
         exc_type, exc_value, exc_traceback = sys.exc_info()
@@ -120,5 +31,3 @@ except Exception as e:
                                   limit=2, file=sys.stdout)
     except Exception as e:
         print(str(e))
-
-app.synth()

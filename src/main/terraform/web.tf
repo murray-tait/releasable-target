@@ -20,15 +20,14 @@ locals {
 }
 
 module "web" {
-  source = "git@github.com:deathtumble/terraform_modules.git//modules/web?ref=v0.1.42"
-  #  source                         = "../../../../../infra2/terraform/modules/web"
-  aws_profile  = module.common.aws_profile
-  fqdn         = "web${module.common.fqdn}"
-  fqdn_no_app  = module.common.fqdn_no_app
-  web_acl_name = module.common.web_acl_name
-  providers = {
-    aws.global = aws.global
-  }
+  #  source = "git@github.com:deathtumble/terraform_modules.git//modules/web?ref=v0.1.42"
+  source           = "../../../../../infra2/terraform/modules/web"
+  aws_profile      = module.common.aws_profile
+  fqdn             = "web${module.common.fqdn}"
+  fqdn_no_app      = module.common.fqdn_no_app
+  web_acl_name     = module.common.web_acl_name
+  application_name = local.application_name
+
   environment_config = merge(local.config,
     local.app_config
   )

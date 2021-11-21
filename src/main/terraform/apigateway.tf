@@ -8,8 +8,4 @@ module "main" {
   certificate_arn   = data.aws_acm_certificate.main.arn
   web_acl_id        = data.aws_wafregional_web_acl.main.id
   lambda_invoke_arn = aws_lambda_function.main.invoke_arn
-
-  providers = {
-    aws.global = aws.global
-  }
 }

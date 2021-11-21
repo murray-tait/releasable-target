@@ -7,24 +7,21 @@ import os
 
 class BaseStack(TerraformStack):
 
-    def __init__(self, scope: Construct):
-        self._scope = scope
-        ns = self._get_app_name()
+    def __init__(self, scope: Construct, ns: str):
         super().__init__(scope, ns)
+        self._scope = scope
         self._ns = ns
-
-    def populate(self) -> None:
         tldn = self._get_top_level_domain_name()
 
-        locals = self.get_locals_from_account_tags()
+        self._locals = self.get_locals_from_account_tags()
 
-        locals["domain"] = self._get_top_level_domain_name()
+        self._locals["domain"] = tldn
 
-        for key, value in locals.items():
+        for key, value in self._locals.items():
             TerraformLocal(self, key, value)
 
-        terraform_state_account_id = locals["terraform_state_account_id"]
-        terraform_state_account_name = locals["terraform_state_account_name"]
+        terraform_state_account_id = self._locals["terraform_state_account_id"]
+        terraform_state_account_name = self._locals["terraform_state_account_name"]
         self.create_backend(tldn, terraform_state_account_name,
                             terraform_state_account_id)
 

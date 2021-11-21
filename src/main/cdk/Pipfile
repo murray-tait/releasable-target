@@ -4,9 +4,8 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [requires]
-python_version = "3.8"
+python_version = "3"
 
 [packages]
-cdktf = "~=0.1.0"
+cdktf = "~=0.7.0"
 boto3 = "*"
-constructs = "*"

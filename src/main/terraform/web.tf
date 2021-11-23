@@ -20,8 +20,8 @@ locals {
 }
 
 module "web" {
-  #  source = "git@github.com:deathtumble/terraform_modules.git//modules/web?ref=v0.1.42"
-  source           = "../../../../../infra2/terraform/modules/web"
+  source = "git@github.com:deathtumble/terraform_modules.git//modules/web?ref=v0.4.1"
+  #  source           = "../../../../../infra2/terraform/modules/web"
   aws_profile      = module.common.aws_profile
   fqdn             = "web${module.common.fqdn}"
   fqdn_no_app      = module.common.fqdn_no_app

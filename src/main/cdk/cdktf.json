@@ -1,14 +1,10 @@
 {
   "language": "python",
-  "app": "pipenv run python main.py",
+  "app": "poetry run python main.py",
+  "projectId": "8ed42c45-62ba-4a8b-8c79-ab971750afba",
   "output": "../terraform",
-  "projectId": "55b87a4a-ee97-443d-8e6a-f4e2df56c813",
   "codeMakerOutput": "imports",
-  "terraformProvider": [
-    "hashicorp/archive@~> 1.3.0",
-    "hashicorp/aws@~> 3.29.0",
-    "hashicorp/template@~> 2.2.0"
-  ],
+  "terraformProviders": ["hashicorp/aws@~> 3.42", "hashicorp/archive@~> 1.3.0"],
   "terraformModules": [],
   "context": {
     "excludeStackIdFromLogicalIds": "true",

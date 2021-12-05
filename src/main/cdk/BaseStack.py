@@ -16,6 +16,7 @@ class BaseStack(TerraformStack):
         self._locals = self.get_locals_from_account_tags()
         self.tldn = self._get_top_level_domain_name()
         self.use_role_arn = self._get_use_terraform_state_role_arn()
+        self.app_name = self._get_app_name()
 
         TerraformLocal(self, "domain", self.tldn)
 

@@ -31,13 +31,12 @@ class MyStack(BaseStack):
                 "terraform_state_account_name": self.terraform_state_account_name,
                 "terraform_state_account_id": self.terraform_state_account_id})
 
-        aws_provider, aws_global_provider = self.create_providers(common)
+        aws_global_provider = self.create_providers(common)
 
         aws_wafregional_web_acl_main = DataAwsWafregionalWebAcl(
             self,
             id="main",
-            name=common.get_string("web_acl_name"),
-            provider=aws_provider
+            name=common.get_string("web_acl_name")
         )
 
         route_53_zone = DataAwsRoute53Zone(
@@ -58,25 +57,23 @@ class MyStack(BaseStack):
             most_recent=True
         )
 
-        app_name = self._get_app_name()
-
         lambda_service_role = IamRole(
             self,
             id="lambda_service_role",
-            name=f'{app_name}-lambda-executeRole',
+            name=f'{self.app_name}-lambda-executeRole',
             assume_role_policy=file("policies/lambda_service_role.json")
         )
 
         lambda_function = LambdaFunction(
             scope=self,
             id="lambda",
-            function_name=app_name,
+            function_name=self.app_name,
             runtime="provided",
             handler="bootstrap",
             timeout=30,
             role=lambda_service_role.arn,
             s3_bucket=common.get_string("destination_builds_bucket_name"),
-            s3_key=f'builds/{app_name}/refs/branch/{self.environment}/lambda.zip'
+            s3_key=f'builds/{self.app_name}/refs/branch/{self.environment}/lambda.zip'
         )
 
         TerraformHclModule(
@@ -102,7 +99,7 @@ class MyStack(BaseStack):
         else:
             profile = common.get_string("aws_profile")
 
-        aws_provider = AwsProvider(
+        AwsProvider(
             self, id="aws", region="eu-west-1", profile=profile, assume_role=assume_role)
 
         aws_global_provider = AwsProvider(
@@ -111,7 +108,7 @@ class MyStack(BaseStack):
 
         ArchiveProvider(self, "archive")
 
-        return aws_provider, aws_global_provider
+        return aws_global_provider
 
 
 def file(file_name: str) -> str:

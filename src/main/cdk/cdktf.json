@@ -2,14 +2,19 @@
   "language": "python",
   "app": "poetry run python main.py",
   "projectId": "8ed42c45-62ba-4a8b-8c79-ab971750afba",
-  "output": "../terraform",
+  "output": "cdktf.out",
   "codeMakerOutput": "imports",
-  "terraformProviders": ["hashicorp/aws@~> 3.42", "hashicorp/archive@~> 1.3.0"],
-  "terraformModules": [],
+  "terraformProviders": ["hashicorp/aws@~> 3.42", "hashicorp/archive@~> 2.2"],
+  "terraformModules": [
+    {
+      "name": "common",
+      "source": "./modules/common"
+    }
+  ],
   "context": {
     "excludeStackIdFromLogicalIds": "true",
     "allowSepCharsInLogicalIds": "true",
-    "app_name": "releasable",
+    "app_name": "releasable-target",
     "accounts_profile": "453254632971_ListAccountsAccess",
     "use_terraform_state_role_arn": false,
     "top_level_domain_name": "org.murraytait.experiment"

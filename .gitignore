@@ -42,3 +42,5 @@ src/main/cdk/imports/*
 src/main/terraform/cdk.tf.json
 node_modules
 src/main/cdk/__pycache__/*
+src/main/cdk/cdktf.out/stacks/release/plan
+src/main/terraform/c.tf.json

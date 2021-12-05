@@ -11,25 +11,30 @@ class BaseStack(TerraformStack):
         super().__init__(scope, ns)
         self._scope = scope
         self._ns = ns
-        tldn = self._get_top_level_domain_name()
 
         self._locals = self.get_locals_from_account_tags()
-
-        self._locals["domain"] = tldn
+        self._locals["domain"] = self._get_top_level_domain_name()
 
         for key, value in self._locals.items():
             TerraformLocal(self, key, value)
 
-        terraform_state_account_id = self._locals["terraform_state_account_id"]
-        terraform_state_account_name = self._locals["terraform_state_account_name"]
-        self.create_backend(tldn, terraform_state_account_name,
-                            terraform_state_account_id)
+        self.tldn = self._locals["domain"]
+        self.aws_account_id = self._locals["aws_account_id"]
+        self.dns_account_id = self._locals["dns_account_id"]
+        self.build_account_id = self._locals["build_account_id"]
+        self.build_account_name = self._locals["build_account_name"]
+        self.terraform_state_account_name = self._locals["terraform_state_account_name"]
+        self.terraform_state_account_id = self._locals["terraform_state_account_id"]
 
-    def create_backend(self, tldn, terraform_state_account_name, terraform_state_account_id):
-        bucket = tldn + '.' + \
-            terraform_state_account_name + '.terraform'
-        dynamo_table = tldn + '.' + \
-            terraform_state_account_name + '.terraform.lock'
+        self.use_role_arn = self._get_use_terraform_state_role_arn()
+
+        self.create_backend()
+
+    def create_backend(self):
+        bucket = self.tldn + '.' + \
+            self.terraform_state_account_name + '.terraform'
+        dynamo_table = self.tldn + '.' + \
+            self.terraform_state_account_name + '.terraform.lock'
 
         backend_args = {
             'region': "eu-west-1",
@@ -39,12 +44,11 @@ class BaseStack(TerraformStack):
             'acl': "bucket-owner-full-control"
         }
 
-        use_role_arn = self._get_use_terraform_state_role_arn()
-        if use_role_arn:
+        if self.use_role_arn:
             backend_args["role_arn"] = 'arn:aws:iam::' + \
-                terraform_state_account_id + ':role/TerraformStateAccess'
+                self.terraform_state_account_id + ':role/TerraformStateAccess'
         else:
-            backend_args['profile'] = terraform_state_account_id + \
+            backend_args['profile'] = self.terraform_state_account_id + \
                 "_TerraformStateAccess"
 
         S3Backend(self, **backend_args)
@@ -94,7 +98,7 @@ class BaseStack(TerraformStack):
 
     def _get_environment(self):
         environment = None
-        with open(self._scope.outdir + '/.terraform/environment', 'r') as reader:
+        with open(self._scope.outdir + '/stacks/' + self._ns + '/.terraform/environment', 'r') as reader:
             environment = reader.read()
         return environment
 

@@ -69,6 +69,20 @@ jsii = ">=1.37.0,<2.0.0"
 publication = ">=0.0.3"
 
 [[package]]
+name = "cdktf-cdktf-provider-archive"
+version = "0.0.199"
+description = "Prebuilt archive Provider for Terraform CDK (cdktf)"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+cdktf = ">=0.7.0,<0.8.0"
+constructs = ">=10.0.0,<11.0.0"
+jsii = ">=1.37.0,<2.0.0"
+publication = ">=0.0.3"
+
+[[package]]
 name = "cdktf-cdktf-provider-aws"
 version = "2.0.13"
 description = "Prebuilt aws Provider for Terraform CDK (cdktf)"
@@ -181,7 +195,7 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "4738b39dad17b1bd68c833da5090096935c95c1ed3fb33f5df083af66e034012"
+content-hash = "3ba6ab7eb306de3cd6848240ef71abdb4f0305c1c8215e8e4fe086bc92888b21"
 
 [metadata.files]
 attrs = [
@@ -203,6 +217,10 @@ cattrs = [
 cdktf = [
     {file = "cdktf-0.7.0-py3-none-any.whl", hash = "sha256:fe43d05167a4bca31dc99642d0d021894edd8e059f5505cfa9b40a1de24c18e1"},
     {file = "cdktf-0.7.0.tar.gz", hash = "sha256:edb1f029d7bb841a180c0b1f270defe44415bb488f08019312e78b37c3fcfeaa"},
+]
+cdktf-cdktf-provider-archive = [
+    {file = "cdktf-cdktf-provider-archive-0.0.199.tar.gz", hash = "sha256:a7b98cff9ee530917852158f366b1b5a44ca3a08a72b49ae5d128e10870df88c"},
+    {file = "cdktf_cdktf_provider_archive-0.0.199-py3-none-any.whl", hash = "sha256:eeb15244ad5b092e22c6051f43077388d218ea1518abf6281f8bd6334e47cff8"},
 ]
 cdktf-cdktf-provider-aws = [
     {file = "cdktf-cdktf-provider-aws-2.0.13.tar.gz", hash = "sha256:293bc163af38851126ed67b3510b955960ad913d819f101b578cfb9a2a93233a"},

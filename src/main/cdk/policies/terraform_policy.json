@@ -1,0 +1,172 @@
+{
+    "Statement": [
+      {
+        "Action": [
+          "codecommit:CancelUploadArchive",
+          "codecommit:GetBranch",
+          "codecommit:GetCommit",
+          "codecommit:GetUploadArchiveStatus",
+          "codecommit:UploadArchive"
+        ],
+        "Resource": "*",
+        "Effect": "Allow"
+      },
+      {
+        "Action": [
+          "codedeploy:CreateDeployment",
+          "codedeploy:GetApplication",
+          "codedeploy:GetApplicationRevision",
+          "codedeploy:GetDeployment",
+          "codedeploy:GetDeploymentConfig",
+          "codedeploy:RegisterApplicationRevision"
+        ],
+        "Resource": "*",
+        "Effect": "Allow"
+      },
+      {
+        "Action": [
+          "elasticbeanstalk:*",
+          "ec2:*",
+          "elasticloadbalancing:*",
+          "autoscaling:*",
+          "cloudwatch:*",
+          "s3:*",
+          "sns:*",
+          "cloudformation:*",
+          "rds:*",
+          "sqs:*",
+          "ecs:*",
+          "logs:DescribeLogGroups",
+          "logs:ListTagsLogGroup"
+        ],
+        "Resource": "*",
+        "Effect": "Allow"
+      },
+      {
+        "Action": [
+          "lambda:InvokeFunction",
+          "lambda:ListFunctions"
+        ],
+        "Resource": "*",
+        "Effect": "Allow"
+      },
+      {
+        "Action": [
+          "opsworks:CreateDeployment",
+          "opsworks:DescribeApps",
+          "opsworks:DescribeCommands",
+          "opsworks:DescribeDeployments",
+          "opsworks:DescribeInstances",
+          "opsworks:DescribeStacks",
+          "opsworks:UpdateApp",
+          "opsworks:UpdateStack"
+        ],
+        "Resource": "*",
+        "Effect": "Allow"
+      },
+      {
+        "Action": [
+          "cloudformation:CreateStack",
+          "cloudformation:DeleteStack",
+          "cloudformation:DescribeStacks",
+          "cloudformation:UpdateStack",
+          "cloudformation:CreateChangeSet",
+          "cloudformation:DeleteChangeSet",
+          "cloudformation:DescribeChangeSet",
+          "cloudformation:ExecuteChangeSet",
+          "cloudformation:SetStackPolicy",
+          "cloudformation:ValidateTemplate"
+        ],
+        "Resource": "*",
+        "Effect": "Allow"
+      },
+      {
+        "Action": [
+          "codebuild:BatchGetBuilds",
+          "codebuild:StartBuild"
+        ],
+        "Resource": "*",
+        "Effect": "Allow"
+      },
+      {
+        "Effect": "Allow",
+        "Action": [
+          "devicefarm:ListProjects",
+          "devicefarm:ListDevicePools",
+          "devicefarm:GetRun",
+          "devicefarm:GetUpload",
+          "devicefarm:CreateUpload",
+          "devicefarm:ScheduleRun"
+        ],
+        "Resource": "*"
+      },
+      {
+        "Effect": "Allow",
+        "Action": [
+          "servicecatalog:ListProvisioningArtifacts",
+          "servicecatalog:CreateProvisioningArtifact",
+          "servicecatalog:DescribeProvisioningArtifact",
+          "servicecatalog:DeleteProvisioningArtifact",
+          "servicecatalog:UpdateProduct"
+        ],
+        "Resource": "*"
+      },
+      {
+        "Effect": "Allow",
+        "Action": [
+          "cloudformation:ValidateTemplate"
+        ],
+        "Resource": "*"
+      },
+      {
+        "Effect": "Allow",
+        "Action": [
+          "ecr:DescribeImages"
+        ],
+        "Resource": "*"
+      },
+      {
+        "Effect": "Allow",
+        "Action": [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        "Resource": "*"
+      },
+      {
+        "Effect": "Allow",
+        "Action": [
+          "route53:ListHostedZones",
+          "acm:ListCertificates",
+          "iam:GetPolicy",
+          "iam:GetRole",
+          "codebuild:BatchGetProjects",
+          "route53:GetHostedZone",
+          "acm:DescribeCertificate",
+          "cloudfront:GetCloudFrontOriginAccessIdentity",
+          "iam:GetPolicyVersion",
+          "iam:GetRolePolicy",
+          "waf-regional:ListWebACLs",
+          "events:DescribeRule",
+          "codepipeline:GetPipeline",
+          "route53:ListTagsForResource",
+          "wafv2:*",
+          "iam:ListAttachedRolePolicies",
+          "acm:ListTagsForCertificate",
+          "events:ListTagsForResource",
+          "codepipeline:ListTagsForResource",
+          "apigateway:*",
+          "events:ListTargetsByRule",
+          "cloudfront:GetDistribution",
+          "route53:ListResourceRecordSets",
+          "cloudfront:ListTagsForResource",
+          "waf-regional:*",
+          "lambda:*",
+          "secretsmanager:GetSecretValue"
+        ],
+        "Resource": "*"
+      }
+    ],
+    "Version": "2012-10-17"
+  }

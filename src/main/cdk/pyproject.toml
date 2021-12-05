@@ -9,6 +9,7 @@ python = "^3.8"
 cdktf = "^0.7.0"
 cdktf-cdktf-provider-aws = "^2.0.13"
 boto3 = "^1.20.12"
+cdktf-cdktf-provider-archive = "^0.0.199"
 
 [tool.poetry.dev-dependencies]
 

@@ -11,22 +11,20 @@ class BaseStack(TerraformStack):
         super().__init__(scope, ns)
         self._scope = scope
         self._ns = ns
+        self.environment = self._get_environment()
 
         self._locals = self.get_locals_from_account_tags()
-        self._locals["domain"] = self._get_top_level_domain_name()
+        self.tldn = self._get_top_level_domain_name()
+        self.use_role_arn = self._get_use_terraform_state_role_arn()
 
-        for key, value in self._locals.items():
-            TerraformLocal(self, key, value)
+        TerraformLocal(self, "domain", self.tldn)
 
-        self.tldn = self._locals["domain"]
         self.aws_account_id = self._locals["aws_account_id"]
         self.dns_account_id = self._locals["dns_account_id"]
         self.build_account_id = self._locals["build_account_id"]
         self.build_account_name = self._locals["build_account_name"]
         self.terraform_state_account_name = self._locals["terraform_state_account_name"]
         self.terraform_state_account_id = self._locals["terraform_state_account_id"]
-
-        self.use_role_arn = self._get_use_terraform_state_role_arn()
 
         self.create_backend()
 
@@ -56,8 +54,6 @@ class BaseStack(TerraformStack):
     def get_locals_from_account_tags(self):
         accounts_profile = self._get_accounts_profile()
 
-        environment = self._get_environment()
-
         locals = {}
 
         session = boto3.Session(profile_name=accounts_profile)
@@ -73,7 +69,7 @@ class BaseStack(TerraformStack):
             account_name = account['Name']
             account_id = account['Id']
 
-            if account_name == environment:
+            if account_name == self.environment:
                 locals["aws_account_id"] = account_id
 
             tags = client.list_tags_for_resource(ResourceId=account_id)
@@ -85,14 +81,17 @@ class BaseStack(TerraformStack):
                 local_account_id_key = key + '_account_id'
                 local_account_name_key = key + "_account_name"
 
-                if value == environment:
+                if value == self.environment:
                     if children_key not in locals:
                         locals[children_key] = []
                     locals[children_key].append(account_id)
 
-                if account_name == environment:
+                if account_name == self.environment:
                     locals[local_account_id_key] = account_ids[value]
                     locals[local_account_name_key] = value
+
+        for key, value in locals.items():
+            TerraformLocal(self, key, value)
 
         return locals
 

@@ -31,20 +31,7 @@ class MyStack(BaseStack):
                 "terraform_state_account_name": self.terraform_state_account_name,
                 "terraform_state_account_id": self.terraform_state_account_id})
 
-        profile = None
-        assume_role = None
-        if self.use_role_arn:
-            assume_role = AwsProviderAssumeRole(
-                self, role_arn=common.get_string("aws_role_arn"))
-        else:
-            profile = common.get_string("aws_profile")
-
-        aws_provider = AwsProvider(
-            self, id="aws", region="eu-west-1", profile=profile, assume_role=assume_role)
-
-        aws_global_provider = AwsProvider(
-            self, id="global_aws", region="us-east-1", profile=profile, assume_role=assume_role, alias="global"
-        )
+        aws_provider, aws_global_provider = self.create_providers(common)
 
         aws_wafregional_web_acl_main = DataAwsWafregionalWebAcl(
             self,
@@ -80,8 +67,6 @@ class MyStack(BaseStack):
             assume_role_policy=file("policies/lambda_service_role.json")
         )
 
-        environment = self._get_environment()
-
         lambda_function = LambdaFunction(
             scope=self,
             id="lambda",
@@ -91,7 +76,7 @@ class MyStack(BaseStack):
             timeout=30,
             role=lambda_service_role.arn,
             s3_bucket=common.get_string("destination_builds_bucket_name"),
-            s3_key=f'builds/{app_name}/refs/branch/{environment}/lambda.zip'
+            s3_key=f'builds/{app_name}/refs/branch/{self.environment}/lambda.zip'
         )
 
         TerraformHclModule(
@@ -108,7 +93,25 @@ class MyStack(BaseStack):
             }
         )
 
-        archive_provider = ArchiveProvider(self, "archive")
+    def create_providers(self, common):
+        profile = None
+        assume_role = None
+        if self.use_role_arn:
+            assume_role = AwsProviderAssumeRole(
+                self, role_arn=common.get_string("aws_role_arn"))
+        else:
+            profile = common.get_string("aws_profile")
+
+        aws_provider = AwsProvider(
+            self, id="aws", region="eu-west-1", profile=profile, assume_role=assume_role)
+
+        aws_global_provider = AwsProvider(
+            self, id="global_aws", region="us-east-1", profile=profile, assume_role=assume_role, alias="global"
+        )
+
+        ArchiveProvider(self, "archive")
+
+        return aws_provider, aws_global_provider
 
 
 def file(file_name: str) -> str:

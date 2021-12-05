@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from cdktf_cdktf_provider_aws import AwsProvider, AwsProviderAssumeRole
-from BaseStack import BaseStack
+from base_stack import BaseStack
 from constructs import Construct
 from cdktf import App, TerraformHclModule
 from cdktf_cdktf_provider_aws.waf_regional import DataAwsWafregionalWebAcl

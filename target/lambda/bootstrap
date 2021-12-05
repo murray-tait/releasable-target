@@ -17,7 +17,7 @@ do
     echo http://${AWS_LAMBDA_RUNTIME_API}/2018-06-01/runtime/invocation/${REQUEST_ID}/response
 
     RESPONSE=$(cat <<EOF
-    { "statusCode": 200, "headers": { }, "body": "{'message': 'message'}", "isBase64Encoded": false }
+    { "statusCode": 200, "headers": { }, "body": "{\"message\": \"message\"}", "isBase64Encoded": false }
 EOF
 )
 

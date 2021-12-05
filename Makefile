@@ -12,7 +12,7 @@ GITHUB_REF ?= refs/heads$(shell echo ${CODEBUILD_WEBHOOK_TRIGGER} | cut -c 7-)
 CODEBUILD_UUID := $(shell cat /proc/sys/kernel/random/uuid)
 CODEBUILD_BUILD_ID ?= uk-nhs-devspineservices-pdspoc:${CODEBUILD_UUID}
 
-build_dir := ${CURDIR}/target
+build_dir := target
 
 default:
 

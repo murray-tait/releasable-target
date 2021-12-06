@@ -13,7 +13,7 @@ class BaseStack(TerraformStack):
         self._ns = ns
         self.environment = self._get_environment()
 
-        self._locals = self.get_locals_from_account_tags()
+        self._locals = self._get_locals_from_account_tags()
         self.tldn = self._get_top_level_domain_name()
         self.use_role_arn = self._get_use_terraform_state_role_arn()
         self.app_name = self._get_app_name()
@@ -27,9 +27,9 @@ class BaseStack(TerraformStack):
         self.terraform_state_account_name = self._locals["terraform_state_account_name"]
         self.terraform_state_account_id = self._locals["terraform_state_account_id"]
 
-        self.create_backend()
+        self._create_backend()
 
-    def create_backend(self):
+    def _create_backend(self):
         bucket = self.tldn + '.' + \
             self.terraform_state_account_name + '.terraform'
         dynamo_table = self.tldn + '.' + \
@@ -52,7 +52,7 @@ class BaseStack(TerraformStack):
 
         S3Backend(self, **backend_args)
 
-    def get_locals_from_account_tags(self):
+    def _get_locals_from_account_tags(self):
         accounts_profile = self._get_accounts_profile()
 
         locals = {}

@@ -71,26 +71,6 @@ class MyStack(CommonStack):
             }
         )
 
-    def create_providers(self):
-        profile = None
-        assume_role = None
-        if self.use_role_arn:
-            assume_role = AwsProviderAssumeRole(
-                self, role_arn=self.aws_role_arn)
-        else:
-            profile = self.aws_profile
-
-        AwsProvider(
-            self, id="aws", region="eu-west-1", profile=profile, assume_role=assume_role)
-
-        aws_global_provider = AwsProvider(
-            self, id="global_aws", region="us-east-1", profile=profile, assume_role=assume_role, alias="global"
-        )
-
-        ArchiveProvider(self, "archive")
-
-        return aws_global_provider
-
 
 def file(file_name: str) -> str:
     f = open(file_name, "r")

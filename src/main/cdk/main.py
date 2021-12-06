@@ -16,8 +16,6 @@ class MyStack(CommonStack):
     def __init__(self, scope: Construct, ns: str):
         super().__init__(scope, ns)
 
-        aws_global_provider = self.create_providers()
-
         aws_wafregional_web_acl_main = DataAwsWafregionalWebAcl(
             self,
             id="main",
@@ -36,7 +34,7 @@ class MyStack(CommonStack):
             domain=f'*.{self.fqdn_no_app}',
             types=["AMAZON_ISSUED"],
             statuses=["ISSUED"],
-            provider=aws_global_provider,
+            provider=self.aws_global_provider,
             most_recent=True
         )
 

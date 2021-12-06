@@ -1,5 +1,7 @@
 from constructs import Construct
-from cdktf import App, TerraformHclModule
+from cdktf import TerraformHclModule
+from cdktf_cdktf_provider_archive import ArchiveProvider
+from cdktf_cdktf_provider_aws import AwsProvider, AwsProviderAssumeRole
 
 from base_stack import BaseStack
 
@@ -32,3 +34,24 @@ class CommonStack(BaseStack):
         self.aws_role_arn = self.common.get_string("aws_role_arn")
         self.aws_profile = self.common.get_string("aws_profile")
         self.web_acl_name = self.common.get_string("web_acl_name")
+        self.aws_global_provider = self.create_providers()
+
+    def create_providers(self):
+        profile = None
+        assume_role = None
+        if self.use_role_arn:
+            assume_role = AwsProviderAssumeRole(
+                self, role_arn=self.aws_role_arn)
+        else:
+            profile = self.aws_profile
+
+        AwsProvider(
+            self, id="aws", region="eu-west-1", profile=profile, assume_role=assume_role)
+
+        aws_global_provider = AwsProvider(
+            self, id="global_aws", region="us-east-1", profile=profile, assume_role=assume_role, alias="global"
+        )
+
+        ArchiveProvider(self, "archive")
+
+        return aws_global_provider

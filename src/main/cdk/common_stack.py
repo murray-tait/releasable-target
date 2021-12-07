@@ -16,7 +16,7 @@ class CommonStack(BaseStack):
             id="common",
             source="../../../../terraform/modules/common/",
             variables={
-                "application_name": "build",
+                "application_name": self.app_name,
                 "project_name": "experiment",
                 "domain": self.tldn,
                 "aws_account_id": self.aws_account_id,
@@ -55,3 +55,11 @@ class CommonStack(BaseStack):
         ArchiveProvider(self, "archive")
 
         return aws_global_provider
+
+    def _get_fqdn(self):
+        if self.environment == "prod":
+            fqdn_list = [self.app_name] + self.tldn.split(".")
+        else:
+            fqdn_list = [self.app_name] + \
+                [self.environment] + self.tldn.split(".")
+        return ".".join(fqdn_list)

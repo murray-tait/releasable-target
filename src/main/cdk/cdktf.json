@@ -14,7 +14,7 @@
   "context": {
     "excludeStackIdFromLogicalIds": "true",
     "allowSepCharsInLogicalIds": "true",
-    "app_name": "releasable-target",
+    "app_name": "releasable",
     "accounts_profile": "453254632971_ListAccountsAccess",
     "use_terraform_state_role_arn": false,
     "top_level_domain_name": "org.murraytait.experiment"

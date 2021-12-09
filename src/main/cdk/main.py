@@ -7,6 +7,7 @@ from cdktf_cdktf_provider_aws.route53 import DataAwsRoute53Zone
 from cdktf_cdktf_provider_aws.acm import DataAwsAcmCertificate
 from cdktf_cdktf_provider_aws.iam import IamRole
 from cdktf_cdktf_provider_aws.lambda_function import LambdaFunction
+from cdktf_cdktf_provider_aws.secrets_manager import DataAwsSecretsmanagerSecretVersion
 
 
 class MyStack(CommonStack):
@@ -85,6 +86,9 @@ class MyStack(CommonStack):
             }
         )
 
+        terraform_build_artifact_key = f'builds/{self.app_name}/refs/branch/{self.environment}/terraform.zip'
+        TerraformLocal(self, "terraform_build_artifact_key",
+                       terraform_build_artifact_key)
         build_artifact_key = f'builds/{self.app_name}/refs/branch/{self.environment}/cloudfront.zip'
         TerraformLocal(self, "build_artifact_key", build_artifact_key)
 
@@ -131,6 +135,9 @@ class MyStack(CommonStack):
 
         TerraformOutput(self, id="common_vars",
                         value=self.common.get_string("all"))
+
+        DataAwsSecretsmanagerSecretVersion(
+            self, id="repo_token", secret_id="repo_token")
 
 
 def file(file_name: str) -> str:

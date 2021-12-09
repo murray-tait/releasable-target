@@ -59,8 +59,24 @@ class MyStack(CommonStack):
 
         TerraformHclModule(
             self,
+            id="lambda_pipeline",
+            source="git@github.com:deathtumble/terraform_modules.git//modules/lambda_pipeline?ref=v0.4.2",
+            # source="../../../../terraform/modules/lambda_pipeline",
+            variables={
+                "application_name": self.app_name,
+                "destination_builds_bucket_name": self.common.get_string("destination_builds_bucket_name"),
+                "function_names": [lambda_function.function_name],
+                "function_arns": [lambda_function.arn],
+                "aws_sns_topic_env_build_notification_name": self.common.get_string("aws_sns_topic_env_build_notification_name"),
+                "aws_account_id": self.aws_account_id
+            }
+        )
+
+        TerraformHclModule(
+            self,
             id="api_gateway",
-            source="../../../../terraform/modules/api_gateway",
+            source="git@github.com:deathtumble/terraform_modules.git//modules/api_gateway?ref=v0.4.2",
+            # source="../../../../terraform/modules/api_gateway",
             variables={
                 "aws_region": self.aws_region,
                 "fqdn": self.fqdn,

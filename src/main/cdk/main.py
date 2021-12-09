@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from common_stack import CommonStack
 from constructs import Construct
-from cdktf import App, TerraformHclModule, TerraformLocal
+from cdktf import App, TerraformHclModule, TerraformLocal, TerraformOutput
 from cdktf_cdktf_provider_aws.waf_regional import DataAwsWafregionalWebAcl
 from cdktf_cdktf_provider_aws.route53 import DataAwsRoute53Zone
 from cdktf_cdktf_provider_aws.acm import DataAwsAcmCertificate
@@ -128,6 +128,9 @@ class MyStack(CommonStack):
                 "environment_config": web_config
             }
         )
+
+        TerraformOutput(self, id="common_vars",
+                        value=self.common.get_string("all"))
 
 
 def file(file_name: str) -> str:

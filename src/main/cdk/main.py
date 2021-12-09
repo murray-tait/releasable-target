@@ -1,10 +1,8 @@
 #!/usr/bin/env python
-from cdktf_cdktf_provider_aws import AwsProvider, AwsProviderAssumeRole
 from common_stack import CommonStack
 from constructs import Construct
-from cdktf import App, TerraformHclModule
+from cdktf import App, TerraformHclModule, TerraformLocal
 from cdktf_cdktf_provider_aws.waf_regional import DataAwsWafregionalWebAcl
-from cdktf_cdktf_provider_archive import ArchiveProvider
 from cdktf_cdktf_provider_aws.route53 import DataAwsRoute53Zone
 from cdktf_cdktf_provider_aws.acm import DataAwsAcmCertificate
 from cdktf_cdktf_provider_aws.iam import IamRole
@@ -84,6 +82,50 @@ class MyStack(CommonStack):
                 "web_acl_id": aws_wafregional_web_acl_main.id,
                 "certificate_arn": acm_cert.arn,
                 "lambda_invoke_arn": lambda_function.invoke_arn
+            }
+        )
+
+        build_artifact_key = f'builds/{self.app_name}/refs/branch/{self.environment}/cloudfront.zip'
+        TerraformLocal(self, "build_artifact_key", build_artifact_key)
+
+        TerraformHclModule(
+            self,
+            id="cloudfront_pipeline",
+            source="git@github.com:deathtumble/terraform_modules.git//modules/cloudfront_pipeline?ref=v0.1.42",
+            variables={
+                "fqdn": f'web{self.fqdn}',
+                "destination_builds_bucket_name": self.common.get_string("destination_builds_bucket_name"),
+                "application_name": "releasable-target",
+                "branch_name": self.environment,
+                "artifacts_bucket_name": self.common.get_string("artifacts_bucket_name"),
+                "build_artifact_key": build_artifact_key
+            }
+        )
+
+        web_config = {
+            "REACT_APP_API_ENDPOINT": "https://${var.application_name}-api.${module.common.fqdn_no_app}/query",
+            "REACT_APP_PRIMARY_SLDN": self.common.get_string("fqdn_no_app"),
+            "REACT_APP_API_SLDN": self.common.get_string("fqdn_no_app"),
+            "REACT_APP_SSO_COOKIE_SLDN": self.common.get_string("fqdn_no_app"),
+            "REACT_APP_AWS_COGNITO_REGION": self.common.get_string("aws_region"),
+            "REACT_APP_AWS_COGNITO_IDENTITY_POOL_REGION": self.common.get_string("aws_region"),
+            "REACT_APP_AWS_COGNITO_AUTH_FLOW_TYPE": "USER_SRP_AUTH",
+            "REACT_APP_AWS_COGNITO_COOKIE_EXPIRY_MINS": 55,
+            "REACT_APP_AWS_COGNITO_COOKIE_SECURE": True,
+        }
+        TerraformLocal(self, "web_config", web_config)
+
+        TerraformHclModule(
+            self,
+            id="web",
+            source="git@github.com:deathtumble/terraform_modules.git//modules/web?ref=v0.4.1",
+            variables={
+                "aws_profile": self.common.get_string("aws_profile"),
+                "fqdn": f'web{self.fqdn}',
+                "fqdn_no_app": self.fqdn_no_app,
+                "web_acl_name": self.web_acl_name,
+                "application_name": "releasable-target",
+                "environment_config": web_config
             }
         )
 

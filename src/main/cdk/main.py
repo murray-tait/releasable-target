@@ -111,7 +111,7 @@ class MyStack(CommonStack):
         )
 
         web_config = {
-            "REACT_APP_API_ENDPOINT": "https://${var.application_name}-api.${module.common.fqdn_no_app}/query",
+            "REACT_APP_API_ENDPOINT": "https://releasable-target-api.${module.common.fqdn_no_app}/query",
             "REACT_APP_PRIMARY_SLDN": self.common.get_string("fqdn_no_app"),
             "REACT_APP_API_SLDN": self.common.get_string("fqdn_no_app"),
             "REACT_APP_SSO_COOKIE_SLDN": self.common.get_string("fqdn_no_app"),

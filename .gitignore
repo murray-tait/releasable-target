@@ -27,11 +27,6 @@ override.tf.json
 
 # Include tfplan files to ignore the plan output of command: terraform plan -out=tfplan
 # example: *tfplan*
-dist.zip
-terraform/lambda_updater.zip
-src/main/terraform/lambda_updater.zip
-src/main/terraform/graph.xml
-src/main/terraform/graph.dot
 graph.xml
 graph.dot
 graphviz2drawio
@@ -39,10 +34,8 @@ src/main/web/build.js
 src/main/web/config.js
 target
 src/main/cdk/imports/*
-src/main/terraform/cdk.tf.json
+src/main/terraform/*
 node_modules
 src/main/cdk/__pycache__/*
-src/main/cdk/cdktf.out/stacks/release/plan
-src/main/terraform/c.tf.json
 src/main/cdk/modules
-src/main/cdk/cdktf.out/stacks/release/.terraform.lock.hcl
+src/main/cdk/cdktf.out/*

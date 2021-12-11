@@ -1,13 +1,17 @@
 #!/usr/bin/env python
-from common_stack import CommonStack
-from constructs import Construct
-from cdktf import App, TerraformHclModule, TerraformLocal, TerraformOutput
-from cdktf_cdktf_provider_aws.waf_regional import DataAwsWafregionalWebAcl
-from cdktf_cdktf_provider_aws.route53 import DataAwsRoute53Zone
-from cdktf_cdktf_provider_aws.acm import DataAwsAcmCertificate
-from cdktf_cdktf_provider_aws.iam import IamRole
-from cdktf_cdktf_provider_aws.lambda_function import LambdaFunction
+import json
+
+from cdktf_cdktf_provider_aws.lambda_function import LambdaPermission
 from cdktf_cdktf_provider_aws.secrets_manager import DataAwsSecretsmanagerSecretVersion
+from cdktf_cdktf_provider_aws.lambda_function import LambdaFunction
+from cdktf_cdktf_provider_aws.iam import IamRole, IamRolePolicyAttachment, IamPolicy
+from cdktf_cdktf_provider_aws.acm import DataAwsAcmCertificate
+from cdktf_cdktf_provider_aws.route53 import DataAwsRoute53Zone
+from cdktf_cdktf_provider_aws.waf_regional import DataAwsWafregionalWebAcl
+from cdktf import App, TerraformHclModule, TerraformLocal, TerraformOutput
+from constructs import Construct
+from common_stack import CommonStack
+from cdktf_cdktf_provider_aws.cloud_watch import CloudwatchLogGroup
 
 
 class MyStack(CommonStack):
@@ -138,6 +142,59 @@ class MyStack(CommonStack):
 
         DataAwsSecretsmanagerSecretVersion(
             self, id="repo_token", secret_id="repo_token")
+
+        LambdaPermission(
+            self,
+            id="lambda_permission_api_gateway",
+            statement_id="releasable-api-gateway-access",
+            function_name="releasable",
+            principal="apigateway.amazonaws.com",
+            action="lambda:InvokeFunction",
+            source_arn="arn:aws:execute-api:eu-west-1:481652375433:y6wsd502lh/*/*/*"
+        )
+
+        lambda_log_access = IamPolicy(
+            self,
+            id="lambda_log_access_policy",
+            name="releasable-lambda-CloudWatchWriteAccess",
+            policy=json.dumps(
+                {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Action": [
+                                "logs:PutLogEvents",
+                                "logs:CreateLogStream"
+                            ],
+                            "Resource": f'arn:aws:logs:{self.aws_region}:{self.aws_account_id}:log-group:/aws/lambda/{self.app_name}:*',
+                            "Effect":"Allow"
+                        },
+                        {
+                            "Action": [
+                                "xray:PutTraceSegments",
+                                "xray:PutTelemetryRecords"
+                            ],
+                            "Resource": "*",
+                            "Effect": "Allow"
+                        }
+                    ]
+                }
+            )
+        )
+
+        IamRolePolicyAttachment(
+            self,
+            id="lambda_log_access_role_policy_attachement",
+            role=lambda_service_role.name,
+            policy_arn=lambda_log_access.arn
+        )
+
+        CloudwatchLogGroup(
+            self,
+            id="lambda_log_group",
+            name=f'/aws/lambda/{lambda_function.function_name}',
+            retention_in_days=14
+        )
 
 
 def file(file_name: str) -> str:

@@ -2,7 +2,7 @@
   "language": "python",
   "app": "poetry run python main.py",
   "projectId": "8ed42c45-62ba-4a8b-8c79-ab971750afba",
-  "output": "cdktf.out",
+  "output": "../../../target/cdktf",
   "codeMakerOutput": "imports",
   "terraformProviders": ["hashicorp/aws@~> 3.42", "hashicorp/archive@~> 2.2"],
   "terraformModules": [

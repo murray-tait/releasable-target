@@ -7,9 +7,9 @@ import os
 
 class BaseStack(TerraformStack):
 
-    def __init__(self, scope: Construct, ns: str):
-        super().__init__(scope, ns)
-        self._scope = scope
+    def __init__(self, app: Construct, ns: str):
+        super().__init__(app, ns)
+        self._scope = app
         self._ns = ns
         self.environment = self._get_environment()
 
@@ -20,12 +20,14 @@ class BaseStack(TerraformStack):
 
         TerraformLocal(self, "domain", self.tldn)
 
-        self.aws_account_id = self._locals["aws_account_id"]
-        self.dns_account_id = self._locals["dns_account_id"]
-        self.build_account_id = self._locals["build_account_id"]
-        self.build_account_name = self._locals["build_account_name"]
-        self.terraform_state_account_name = self._locals["terraform_state_account_name"]
-        self.terraform_state_account_id = self._locals["terraform_state_account_id"]
+        self.aws_account_id = self._locals.get("aws_account_id")
+        self.dns_account_id = self._locals.get("dns_account_id")
+        self.build_account_id = self._locals.get("build_account_id")
+        self.build_account_name = self._locals.get("build_account_name")
+        self.terraform_state_account_name = self._locals.get(
+            "terraform_state_account_name")
+        self.terraform_state_account_id = self._locals.get(
+            "terraform_state_account_id")
 
         self._create_backend()
 
@@ -56,7 +58,6 @@ class BaseStack(TerraformStack):
         accounts_profile = self._get_accounts_profile()
 
         locals = {}
-
         session = boto3.Session(profile_name=accounts_profile)
         client = session.client('organizations')
 
@@ -65,6 +66,9 @@ class BaseStack(TerraformStack):
         account_ids = {}
         for account in accounts:
             account_ids[account['Name']] = account['Id']
+
+        locals["terraform_state_account_name"] = "build"
+        locals["terraform_state_account_id"] = account_ids["build"]
 
         for account in accounts:
             account_name = account['Name']
@@ -98,8 +102,11 @@ class BaseStack(TerraformStack):
 
     def _get_environment(self):
         environment = None
-        with open(self._scope.outdir + '/stacks/' + self._ns + '/.terraform/environment', 'r') as reader:
-            environment = reader.read()
+        try:
+            with open(self._scope.outdir + '/stacks/' + self._ns + '/.terraform/environment', 'r') as reader:
+                environment = reader.read()
+        except:
+            pass
         return environment
 
     def _get_use_terraform_state_role_arn(self):

@@ -8,13 +8,13 @@ from base_stack import BaseStack
 
 class CommonStack(BaseStack):
 
-    def __init__(self, scope: Construct, ns: str):
-        super().__init__(scope, ns)
+    def __init__(self, app: Construct, ns: str):
+        super().__init__(app, ns)
 
         self.common = TerraformHclModule(
             self,
             id="common",
-            source="../../../../terraform/modules/common/",
+            source="../../terraform/modules/common/",
             variables={
                 "application_name": self.app_name,
                 "project_name": "experiment",

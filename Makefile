@@ -45,3 +45,25 @@ install: build
 default: build
 
 all: clean install
+
+tf-workspace-%:yes
+	mkdir -p target/cdktf/stacks/release
+	cd target/cdktf/stacks/release && terraform init
+	cd src/main/cdk && cdktf synth 
+	cd target/cdktf/stacks/release && terraform workspace select $*
+
+tf-get:
+	cd src/main/cdk && cdktf get
+
+tf-plan:
+	cd src/main/cdk && cdktf synth
+	cd target/cdktf/stacks/release && terraform plan
+
+tf-synth:
+	cd src/main/cdk && cdktf synth
+
+tf-diff:
+	cd src/main/cdk && cdktf diff
+
+tf-deploy:
+	cd src/main/cdk && cdktf deploy

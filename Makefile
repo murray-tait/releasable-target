@@ -67,3 +67,8 @@ tf-diff:
 
 tf-deploy:
 	cd src/main/cdk && cdktf deploy
+
+tf-apply:
+	cd src/main/cdk && cdktf synth
+	cd target/cdktf/stacks/release && terraform apply --auto-approve
+

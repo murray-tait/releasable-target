@@ -8,51 +8,75 @@ from cdktf_cdktf_provider_aws.iam import IamRole, IamRolePolicyAttachment, IamPo
 from cdktf_cdktf_provider_aws.acm import DataAwsAcmCertificate
 from cdktf_cdktf_provider_aws.route53 import DataAwsRoute53Zone
 from cdktf_cdktf_provider_aws.waf_regional import DataAwsWafregionalWebAcl
-from cdktf import App, TerraformHclModule, TerraformLocal, TerraformOutput
-from constructs import Construct
-from common_stack import CommonStack
+from cdktf import App, TerraformHclModule, TerraformLocal, TerraformOutput, S3Backend, TerraformStack
 from cdktf_cdktf_provider_aws.cloud_watch import CloudwatchLogGroup
+from constructs import Construct
+
+from shared import Shared
+from provider_factory import ProviderFactory
+from accounts import Accounts
+from config import Config
 
 
-class MyStack(CommonStack):
+class MyStack(TerraformStack):
 
-    def __init__(self, app: Construct, ns: str):
-        super().__init__(app, ns)
+    def __init__(self, scope: Construct, ns: str):
+
+        super().__init__(scope, ns)
+        self.scope = scope
+        self._ns = ns
+
+        self.environment = self._get_environment(scope, ns)
+
+        self.config = Config(scope, ns)
+
+        self.accounts = Accounts(
+            self.environment, self.config.accounts_profile)
+
+        self._create_backend()
+        self.shared = Shared(self.config, self.accounts, self.environment)
+        self._provider_factory = ProviderFactory(
+            self, self.config, self.shared.aws_role_arn, self.shared.aws_profile)
+
+        self._provider_factory.build("eu-west-1")
+
+        self.aws_global_provider = self._provider_factory.build(
+            "us-east-1", "global_aws", "global")
 
         if self.environment != "default":
             aws_wafregional_web_acl_main = DataAwsWafregionalWebAcl(
                 self,
                 id="main",
-                name=self.web_acl_name
+                name=self.shared.web_acl_name
             )
 
             route_53_zone = DataAwsRoute53Zone(
                 self,
                 id="environment",
-                name=self.fqdn_no_app
+                name=self.shared.environment_domain_name
             )
 
             acm_cert = environment_certificate(
-                self, self.aws_global_provider, self.fqdn_no_app
+                self, self.aws_global_provider, self.shared.environment_domain_name
             )
 
             lambda_service_role = IamRole(
                 self,
                 id="lambda_service_role",
-                name=f'{self.app_name}-lambda-executeRole',
+                name=f'{self.config.app_name}-lambda-executeRole',
                 assume_role_policy=file("policies/lambda_service_role.json")
             )
 
             lambda_function = LambdaFunction(
                 scope=self,
                 id="lambda",
-                function_name=self.app_name,
+                function_name=self.config.app_name,
                 runtime="provided",
                 handler="bootstrap",
                 timeout=30,
                 role=lambda_service_role.arn,
-                s3_bucket=self.destination_builds_bucket_name,
-                s3_key=f'builds/{self.app_name}/refs/branch/{self.environment}/lambda.zip'
+                s3_bucket=self.shared.destination_builds_bucket_name,
+                s3_key=f'builds/{self.config.app_name}/refs/branch/{self.environment}/lambda.zip'
             )
 
             TerraformHclModule(
@@ -61,12 +85,12 @@ class MyStack(CommonStack):
                 source="git@github.com:deathtumble/terraform_modules.git//modules/lambda_pipeline?ref=v0.4.2",
                 # source="../../../../terraform/modules/lambda_pipeline",
                 variables={
-                    "application_name": self.app_name,
-                    "destination_builds_bucket_name": self.common.get_string("destination_builds_bucket_name"),
+                    "application_name": self.config.app_name,
+                    "destination_builds_bucket_name": self.shared.destination_builds_bucket_name,
                     "function_names": [lambda_function.function_name],
                     "function_arns": [lambda_function.arn],
-                    "aws_sns_topic_env_build_notification_name": self.common.get_string("aws_sns_topic_env_build_notification_name"),
-                    "aws_account_id": self.aws_account_id
+                    "aws_sns_topic_env_build_notification_name": self.shared.aws_sns_topic_env_build_notification_name,
+                    "aws_account_id": self.accounts.aws_account_id
                 }
             )
 
@@ -76,8 +100,8 @@ class MyStack(CommonStack):
                 source="git@github.com:deathtumble/terraform_modules.git//modules/api_gateway?ref=v0.4.2",
                 # source="../../../../terraform/modules/api_gateway",
                 variables={
-                    "aws_region": self.aws_region,
-                    "fqdn": self.fqdn,
+                    "aws_region": self.config.aws_region,
+                    "fqdn": self.shared.fqdn,
                     "zone_id": route_53_zone.id,
                     "web_acl_id": aws_wafregional_web_acl_main.id,
                     "certificate_arn": acm_cert.arn,
@@ -85,10 +109,10 @@ class MyStack(CommonStack):
                 }
             )
 
-            terraform_build_artifact_key = f'builds/{self.app_name}/refs/branch/{self.environment}/terraform.zip'
+            terraform_build_artifact_key = f'builds/{self.config.app_name}/refs/branch/{self.environment}/terraform.zip'
             TerraformLocal(self, "terraform_build_artifact_key",
                            terraform_build_artifact_key)
-            build_artifact_key = f'builds/{self.app_name}/refs/branch/{self.environment}/cloudfront.zip'
+            build_artifact_key = f'builds/{self.config.app_name}/refs/branch/{self.environment}/cloudfront.zip'
             TerraformLocal(self, "build_artifact_key", build_artifact_key)
 
             TerraformHclModule(
@@ -96,22 +120,22 @@ class MyStack(CommonStack):
                 id="cloudfront_pipeline",
                 source="git@github.com:deathtumble/terraform_modules.git//modules/cloudfront_pipeline?ref=v0.1.42",
                 variables={
-                    "fqdn": f'web{self.fqdn}',
-                    "destination_builds_bucket_name": self.common.get_string("destination_builds_bucket_name"),
+                    "fqdn": f'web{self.shared.fqdn}',
+                    "destination_builds_bucket_name": self.shared.destination_builds_bucket_name,
                     "application_name": "releasable",
                     "branch_name": self.environment,
-                    "artifacts_bucket_name": self.common.get_string("artifacts_bucket_name"),
+                    "artifacts_bucket_name": self.shared.artifacts_bucket_name,
                     "build_artifact_key": build_artifact_key
                 }
             )
 
             web_config = {
-                "REACT_APP_API_ENDPOINT": "https://releasable.${module.common.fqdn_no_app}/query",
-                "REACT_APP_PRIMARY_SLDN": self.common.get_string("fqdn_no_app"),
-                "REACT_APP_API_SLDN": self.common.get_string("fqdn_no_app"),
-                "REACT_APP_SSO_COOKIE_SLDN": self.common.get_string("fqdn_no_app"),
-                "REACT_APP_AWS_COGNITO_REGION": self.common.get_string("aws_region"),
-                "REACT_APP_AWS_COGNITO_IDENTITY_POOL_REGION": self.common.get_string("aws_region"),
+                "REACT_APP_API_ENDPOINT": f"https://releasable.{self.shared.environment_domain_name}/query",
+                "REACT_APP_PRIMARY_SLDN": self.shared.environment_domain_name,
+                "REACT_APP_API_SLDN": self.shared.environment_domain_name,
+                "REACT_APP_SSO_COOKIE_SLDN": self.shared.environment_domain_name,
+                "REACT_APP_AWS_COGNITO_REGION": self.config.aws_region,
+                "REACT_APP_AWS_COGNITO_IDENTITY_POOL_REGION": self.config.aws_region,
                 "REACT_APP_AWS_COGNITO_AUTH_FLOW_TYPE": "USER_SRP_AUTH",
                 "REACT_APP_AWS_COGNITO_COOKIE_EXPIRY_MINS": 55,
                 "REACT_APP_AWS_COGNITO_COOKIE_SECURE": True,
@@ -123,17 +147,43 @@ class MyStack(CommonStack):
                 id="web",
                 source="git@github.com:deathtumble/terraform_modules.git//modules/web?ref=v0.4.1",
                 variables={
-                    "aws_profile": self.common.get_string("aws_profile"),
-                    "fqdn": f'web{self.fqdn}',
-                    "fqdn_no_app": self.fqdn_no_app,
-                    "web_acl_name": self.web_acl_name,
+                    "aws_profile": self.shared.aws_profile,
+                    "fqdn": f'web{self.shared.fqdn}',
+                    "fqdn_no_app": self.shared.environment_domain_name,
+                    "web_acl_name": self.shared.web_acl_name,
                     "application_name": "releasable",
                     "environment_config": web_config
                 }
             )
 
-            TerraformOutput(self, id="common_vars",
-                            value=self.common.get_string("all"))
+            TerraformOutput(self, id="common_vars", value={
+                "application_name": self.config.app_name,
+                "artifacts_bucket_name": self.shared.artifacts_bucket_name,
+                "aws_profile": self.shared.aws_profile,
+                "aws_region": self.config.aws_region,
+                "aws_role_arn": self.shared.aws_role_arn,
+                "aws_sns_topic_build_notification_name": self.shared.aws_sns_topic_build_notification_name,
+                "aws_sns_topic_env_build_notification_name": self.shared.aws_sns_topic_env_build_notification_name,
+                "build_account_profile": self.shared.build_account_profile,
+                "cloudtrails_logs_bucket_name": self.shared.cloudtrails_logs_bucket_name,
+                "destination_builds_bucket_name": self.shared.destination_builds_bucket_name,
+                "dns_account_profile": self.shared.dns_account_profile,
+                "environment_name": self.environment,
+                "fqdn": self.shared.fqdn,
+                "fqdn_no_app": self.shared.fqdn_no_app,
+                "fqdn_no_app_reverse": self.shared.fqdn_no_app_reverse,
+                "fqdn_no_app_reverse_dash": self.shared.fqdn_no_app_reverse_dash,
+                "fqdn_no_env": self.shared.fqdn_no_env,
+                "fqdn_no_env_reverse": self.shared.fqdn_no_env_reverse,
+                "fqdn_no_env_reverse_dash": self.shared.fqdn_no_env_reverse_dash,
+                "fqdn_reverse": self.shared.fqdn_reverse,
+                "fqdn_reverse_dash": self.shared.fqdn_reverse_dash,
+                "project_name": self.config.project_name,
+                "source_build_bucket_name": self.shared.source_build_bucket_name,
+                "terraform_bucket_name": self.shared.terraform_bucket_name,
+                "terraform_dynamodb_table": self.shared.terraform_dynamodb_table,
+                "web_acl_name": self.shared.web_acl_name
+            })
 
             DataAwsSecretsmanagerSecretVersion(
                 self, id="repo_token", secret_id="repo_token")
@@ -161,7 +211,7 @@ class MyStack(CommonStack):
                                     "logs:PutLogEvents",
                                     "logs:CreateLogStream"
                                 ],
-                                "Resource": f'arn:aws:logs:{self.aws_region}:{self.aws_account_id}:log-group:/aws/lambda/{self.app_name}:*',
+                                "Resource": f'arn:aws:logs:{self.config.aws_region}:{self.accounts.aws_account_id}:log-group:/aws/lambda/{self.config.app_name}:*',
                                 "Effect":"Allow"
                             },
                             {
@@ -190,6 +240,39 @@ class MyStack(CommonStack):
                 name=f'/aws/lambda/{lambda_function.function_name}',
                 retention_in_days=14
             )
+
+    def _create_backend(self):
+        bucket = self.config.tldn + '.' + \
+            self.accounts.terraform_state_account_name + '.terraform'
+        dynamo_table = self.config.tldn + '.' + \
+            self.accounts.terraform_state_account_name + '.terraform.lock'
+
+        backend_args = {
+            'region': "eu-west-1",
+            'key': self._ns + '/terraform.tfstate',
+            'bucket': bucket,
+            'dynamodb_table': dynamo_table,
+            'acl': "bucket-owner-full-control"
+        }
+
+        if self.config.use_role_arn:
+            backend_args["role_arn"] = 'arn:aws:iam::' + \
+                self.accounts.terraform_state_account_id + ':role/TerraformStateAccess'
+        else:
+            backend_args['profile'] = self.accounts.terraform_state_account_id + \
+                "_TerraformStateAccess"
+
+        S3Backend(self, **backend_args)
+
+    @staticmethod
+    def _get_environment(scope: Construct, ns: str):
+        environment = None
+        try:
+            with open(scope.outdir + '/stacks/' + ns + '/.terraform/environment', 'r') as reader:
+                environment = reader.read()
+        except:
+            pass
+        return environment
 
 
 def environment_certificate(scope, provider, environment_domain_name):

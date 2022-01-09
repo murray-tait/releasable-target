@@ -5,18 +5,15 @@
   "output": "../../../target/cdktf",
   "codeMakerOutput": "imports",
   "terraformProviders": ["hashicorp/aws@~> 3.42", "hashicorp/archive@~> 2.2"],
-  "terraformModules": [
-    {
-      "name": "common",
-      "source": "./modules/common"
-    }
-  ],
+  "terraformModules": [],
   "context": {
     "excludeStackIdFromLogicalIds": "true",
     "allowSepCharsInLogicalIds": "true",
     "app_name": "releasable",
     "accounts_profile": "453254632971_ListAccountsAccess",
     "use_terraform_state_role_arn": false,
-    "top_level_domain_name": "org.murraytait.experiment"
+    "top_level_domain_name": "org.murraytait.experiment",
+    "project_name": "experiment",
+    "aws_region": "eu-west-1"
   }
 }

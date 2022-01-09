@@ -1,7 +1,7 @@
 window.env = Object.assign({},
     window.env, { 
         "REACT_APP_API_ENDPOINT": "https://localhost:8080/query", 
-        "REACT_APP_API_SLDN": "endtoend.urbanfortress.uk", "REACT_APP_AWS_COGNITO_AUTH_FLOW_TYPE": "USER_SRP_AUTH", 
+        "REACT_APP_AWS_COGNITO_AUTH_FLOW_TYPE": "USER_SRP_AUTH", 
         "REACT_APP_AWS_COGNITO_COOKIE_EXPIRY_MINS": 55, 
         "REACT_APP_AWS_COGNITO_COOKIE_SECURE": true, 
         "REACT_APP_AWS_COGNITO_IDENTITY_POOL_REGION": "eu-west-1", 

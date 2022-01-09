@@ -23,27 +23,24 @@ class MyStack(TerraformStack):
     def __init__(self, scope: Construct, ns: str):
 
         super().__init__(scope, ns)
-        self.scope = scope
         self._ns = ns
 
         self.environment = self._get_environment(scope, ns)
 
-        self.config = Config(scope, ns)
-
-        self.accounts = Accounts(
-            self.environment, self.config.accounts_profile)
-
-        self._create_backend()
-        self.shared = Shared(self.config, self.accounts, self.environment)
-        self._provider_factory = ProviderFactory(
-            self, self.config, self.shared.aws_role_arn, self.shared.aws_profile)
-
-        self._provider_factory.build("eu-west-1")
-
-        self.aws_global_provider = self._provider_factory.build(
-            "us-east-1", "global_aws", "global")
-
         if self.environment != "default":
+            config = Config(scope, ns)
+            self.accounts = Accounts(self.environment, config.accounts_profile)
+            self.shared = Shared(config, self.accounts, self.environment)
+
+            self._create_backend(config)
+            self._provider_factory = ProviderFactory(
+                self, config, self.shared.aws_role_arn, self.shared.aws_profile)
+
+            self._provider_factory.build("eu-west-1")
+
+            self.aws_global_provider = self._provider_factory.build(
+                "us-east-1", "global_aws", "global")
+
             aws_wafregional_web_acl_main = DataAwsWafregionalWebAcl(
                 self,
                 id="main",
@@ -56,27 +53,23 @@ class MyStack(TerraformStack):
                 name=self.shared.environment_domain_name
             )
 
-            acm_cert = environment_certificate(
-                self, self.aws_global_provider, self.shared.environment_domain_name
-            )
-
             lambda_service_role = IamRole(
                 self,
                 id="lambda_service_role",
-                name=f'{self.config.app_name}-lambda-executeRole',
+                name=f'{config.app_name}-lambda-executeRole',
                 assume_role_policy=file("policies/lambda_service_role.json")
             )
 
             lambda_function = LambdaFunction(
                 scope=self,
                 id="lambda",
-                function_name=self.config.app_name,
+                function_name=config.app_name,
                 runtime="provided",
                 handler="bootstrap",
                 timeout=30,
                 role=lambda_service_role.arn,
                 s3_bucket=self.shared.destination_builds_bucket_name,
-                s3_key=f'builds/{self.config.app_name}/refs/branch/{self.environment}/lambda.zip'
+                s3_key=f'builds/{config.app_name}/refs/branch/{self.environment}/lambda.zip'
             )
 
             TerraformHclModule(
@@ -85,7 +78,7 @@ class MyStack(TerraformStack):
                 source="git@github.com:deathtumble/terraform_modules.git//modules/lambda_pipeline?ref=v0.4.2",
                 # source="../../../../terraform/modules/lambda_pipeline",
                 variables={
-                    "application_name": self.config.app_name,
+                    "application_name": config.app_name,
                     "destination_builds_bucket_name": self.shared.destination_builds_bucket_name,
                     "function_names": [lambda_function.function_name],
                     "function_arns": [lambda_function.arn],
@@ -94,13 +87,17 @@ class MyStack(TerraformStack):
                 }
             )
 
+            acm_cert = environment_certificate(
+                self, self.aws_global_provider, self.shared.environment_domain_name
+            )
+
             TerraformHclModule(
                 self,
                 id="api_gateway",
                 source="git@github.com:deathtumble/terraform_modules.git//modules/api_gateway?ref=v0.4.2",
                 # source="../../../../terraform/modules/api_gateway",
                 variables={
-                    "aws_region": self.config.aws_region,
+                    "aws_region": config.aws_region,
                     "fqdn": self.shared.fqdn,
                     "zone_id": route_53_zone.id,
                     "web_acl_id": aws_wafregional_web_acl_main.id,
@@ -109,10 +106,10 @@ class MyStack(TerraformStack):
                 }
             )
 
-            terraform_build_artifact_key = f'builds/{self.config.app_name}/refs/branch/{self.environment}/terraform.zip'
+            terraform_build_artifact_key = f'builds/{config.app_name}/refs/branch/{self.environment}/terraform.zip'
             TerraformLocal(self, "terraform_build_artifact_key",
                            terraform_build_artifact_key)
-            build_artifact_key = f'builds/{self.config.app_name}/refs/branch/{self.environment}/cloudfront.zip'
+            build_artifact_key = f'builds/{config.app_name}/refs/branch/{self.environment}/cloudfront.zip'
             TerraformLocal(self, "build_artifact_key", build_artifact_key)
 
             TerraformHclModule(
@@ -134,8 +131,8 @@ class MyStack(TerraformStack):
                 "REACT_APP_PRIMARY_SLDN": self.shared.environment_domain_name,
                 "REACT_APP_API_SLDN": self.shared.environment_domain_name,
                 "REACT_APP_SSO_COOKIE_SLDN": self.shared.environment_domain_name,
-                "REACT_APP_AWS_COGNITO_REGION": self.config.aws_region,
-                "REACT_APP_AWS_COGNITO_IDENTITY_POOL_REGION": self.config.aws_region,
+                "REACT_APP_AWS_COGNITO_REGION": config.aws_region,
+                "REACT_APP_AWS_COGNITO_IDENTITY_POOL_REGION": config.aws_region,
                 "REACT_APP_AWS_COGNITO_AUTH_FLOW_TYPE": "USER_SRP_AUTH",
                 "REACT_APP_AWS_COGNITO_COOKIE_EXPIRY_MINS": 55,
                 "REACT_APP_AWS_COGNITO_COOKIE_SECURE": True,
@@ -155,35 +152,6 @@ class MyStack(TerraformStack):
                     "environment_config": web_config
                 }
             )
-
-            TerraformOutput(self, id="common_vars", value={
-                "application_name": self.config.app_name,
-                "artifacts_bucket_name": self.shared.artifacts_bucket_name,
-                "aws_profile": self.shared.aws_profile,
-                "aws_region": self.config.aws_region,
-                "aws_role_arn": self.shared.aws_role_arn,
-                "aws_sns_topic_build_notification_name": self.shared.aws_sns_topic_build_notification_name,
-                "aws_sns_topic_env_build_notification_name": self.shared.aws_sns_topic_env_build_notification_name,
-                "build_account_profile": self.shared.build_account_profile,
-                "cloudtrails_logs_bucket_name": self.shared.cloudtrails_logs_bucket_name,
-                "destination_builds_bucket_name": self.shared.destination_builds_bucket_name,
-                "dns_account_profile": self.shared.dns_account_profile,
-                "environment_name": self.environment,
-                "fqdn": self.shared.fqdn,
-                "fqdn_no_app": self.shared.fqdn_no_app,
-                "fqdn_no_app_reverse": self.shared.fqdn_no_app_reverse,
-                "fqdn_no_app_reverse_dash": self.shared.fqdn_no_app_reverse_dash,
-                "fqdn_no_env": self.shared.fqdn_no_env,
-                "fqdn_no_env_reverse": self.shared.fqdn_no_env_reverse,
-                "fqdn_no_env_reverse_dash": self.shared.fqdn_no_env_reverse_dash,
-                "fqdn_reverse": self.shared.fqdn_reverse,
-                "fqdn_reverse_dash": self.shared.fqdn_reverse_dash,
-                "project_name": self.config.project_name,
-                "source_build_bucket_name": self.shared.source_build_bucket_name,
-                "terraform_bucket_name": self.shared.terraform_bucket_name,
-                "terraform_dynamodb_table": self.shared.terraform_dynamodb_table,
-                "web_acl_name": self.shared.web_acl_name
-            })
 
             DataAwsSecretsmanagerSecretVersion(
                 self, id="repo_token", secret_id="repo_token")
@@ -211,7 +179,7 @@ class MyStack(TerraformStack):
                                     "logs:PutLogEvents",
                                     "logs:CreateLogStream"
                                 ],
-                                "Resource": f'arn:aws:logs:{self.config.aws_region}:{self.accounts.aws_account_id}:log-group:/aws/lambda/{self.config.app_name}:*',
+                                "Resource": f'arn:aws:logs:{config.aws_region}:{self.accounts.aws_account_id}:log-group:/aws/lambda/{config.app_name}:*',
                                 "Effect":"Allow"
                             },
                             {
@@ -241,10 +209,10 @@ class MyStack(TerraformStack):
                 retention_in_days=14
             )
 
-    def _create_backend(self):
-        bucket = self.config.tldn + '.' + \
+    def _create_backend(self, config):
+        bucket = config.tldn + '.' + \
             self.accounts.terraform_state_account_name + '.terraform'
-        dynamo_table = self.config.tldn + '.' + \
+        dynamo_table = config.tldn + '.' + \
             self.accounts.terraform_state_account_name + '.terraform.lock'
 
         backend_args = {
@@ -255,7 +223,7 @@ class MyStack(TerraformStack):
             'acl': "bucket-owner-full-control"
         }
 
-        if self.config.use_role_arn:
+        if config.use_role_arn:
             backend_args["role_arn"] = 'arn:aws:iam::' + \
                 self.accounts.terraform_state_account_id + ':role/TerraformStateAccess'
         else:

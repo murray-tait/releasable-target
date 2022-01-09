@@ -16,13 +16,14 @@ class Shared():
         self.fqdn = ".".join(fqdn_as_list)
         self.fqdn_reverse = ".".join(reverse(fqdn_as_list))
         self.fqdn_reverse_dash = "-".join(reverse(fqdn_as_list))
-        self.fqdn_no_app = ".".join(fqdn_as_list[1:])
-        self.fqdn_no_app_reverse = ".".join(reverse(fqdn_as_list[1:]))
-        self.fqdn_no_app_reverse_dash = "-".join(reverse(fqdn_as_list[1:]))
+        self.environment_domain_name = ".".join(fqdn_as_list[1:])
+        self.environment_domain_name_reverse = ".".join(
+            reverse(fqdn_as_list[1:]))
+        self.environment_domain_name_reverse_dash = "-".join(
+            reverse(fqdn_as_list[1:]))
         self.fqdn_no_env = ".".join(fqdn_as_list[2:])
         self.fqdn_no_env_reverse = ".".join(reverse(fqdn_as_list[2:]))
         self.fqdn_no_env_reverse_dash = "-".join(reverse(fqdn_as_list[2:]))
-        self.environment_domain_name = ".".join(fqdn_as_list[1:])
 
         self.web_acl_name = "IPWhiteListWebACL"
         self.aws_role_arn = f"arn:aws:iam::{accounts.terraform_state_account_id}:role/{config.app_name}-terraform-pipleine-CodeBuildRole"
@@ -36,7 +37,7 @@ class Shared():
         self.source_build_bucket_name = f"{config.tldn}.{accounts.build_account_name}.builds"
         self.cloudtrails_logs_bucket_name = f"{config.tldn}.{environment}.cloudtrails.logs"
         self.terraform_bucket_name = f"{config.tldn}.{accounts.terraform_state_account_name}.terraform"
-        self.aws_sns_topic_env_build_notification_name = f"{self.fqdn_no_app_reverse_dash}-build-notifications"
+        self.aws_sns_topic_env_build_notification_name = f"{self.environment_domain_name_reverse_dash}-build-notifications"
         self.aws_sns_topic_build_notification_name = f"{self.fqdn_no_env_reverse_dash}-build-notifications"
         self.terraform_dynamodb_table = f"{config.tldn}.{accounts.terraform_state_account_name}.terraform.lock"
         self.destination_builds_bucket_name = f"{config.tldn}.{environment}.builds"

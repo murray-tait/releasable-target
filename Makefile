@@ -63,7 +63,9 @@ tf-synth:
 	cd src/main/cdk && cdktf synth
 
 tf-diff:
-	cd src/main/cdk && cdktf diff
+	cd src/main/cdk  && \
+	. .venv/bin/activate && \
+	cdktf diff
 
 tf-deploy:
 	cd src/main/cdk && cdktf deploy

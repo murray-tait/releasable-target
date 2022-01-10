@@ -1,21 +1,21 @@
 #!/usr/bin/env python
 import json
 
-from cdktf_cdktf_provider_aws.lambda_function import LambdaPermission
-from cdktf_cdktf_provider_aws.secrets_manager import DataAwsSecretsmanagerSecretVersion
-from cdktf_cdktf_provider_aws.lambda_function import LambdaFunction
+from cdktf_cdktf_provider_aws.lambdafunction import LambdaPermission
+from cdktf_cdktf_provider_aws.secretsmanager import DataAwsSecretsmanagerSecretVersion
+from cdktf_cdktf_provider_aws.lambdafunction import LambdaFunction
 from cdktf_cdktf_provider_aws.iam import IamRole, IamRolePolicyAttachment, IamPolicy
 from cdktf_cdktf_provider_aws.acm import DataAwsAcmCertificate
 from cdktf_cdktf_provider_aws.route53 import DataAwsRoute53Zone
-from cdktf_cdktf_provider_aws.waf_regional import DataAwsWafregionalWebAcl
+from cdktf_cdktf_provider_aws.wafregional import DataAwsWafregionalWebAcl
 from cdktf import App, TerraformHclModule, TerraformLocal, TerraformOutput, S3Backend, TerraformStack
-from cdktf_cdktf_provider_aws.cloud_watch import CloudwatchLogGroup
+from cdktf_cdktf_provider_aws.cloudwatch import CloudwatchLogGroup
 from constructs import Construct
 
-from shared import Shared
-from provider_factory import ProviderFactory
-from accounts import Accounts
-from config import Config
+from terraform.shared import Shared
+from terraform.provider_factory import ProviderFactory
+from terraform.accounts import Accounts
+from terraform.config import Config
 
 
 class MyStack(TerraformStack):

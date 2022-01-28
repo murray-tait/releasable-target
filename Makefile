@@ -49,6 +49,8 @@ install: build
 	aws s3 cp --no-progress target/lambda.zip s3://${S3_BUILD_BUCKET}/builds/releasable/refs/${CODEBUILD_WEBHOOK_TRIGGER}/lambda.zip
 	aws s3 cp --no-progress target/cloudfront.zip s3://${S3_BUILD_BUCKET}/builds/releasable/objects/${SHA1_START}/${SHA1_END}/cloudfront.zip
 	aws s3 cp --no-progress target/cloudfront.zip s3://${S3_BUILD_BUCKET}/builds/releasable/refs/${CODEBUILD_WEBHOOK_TRIGGER}/cloudfront.zip
+	aws s3 cp --no-progress target/terraform.zip s3://${S3_BUILD_BUCKET}/builds/releasable/objects/${SHA1_START}/${SHA1_END}/terraform.zip
+	aws s3 cp --no-progress target/terraform.zip s3://${S3_BUILD_BUCKET}/builds/releasable/refs/${CODEBUILD_WEBHOOK_TRIGGER}/terraform.zip
 
 default: build
 

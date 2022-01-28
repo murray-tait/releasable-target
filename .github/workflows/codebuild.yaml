@@ -7,8 +7,8 @@ jobs:
       - name: '"AWS CodeBuild run build" Action For GitHub Actions'
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-access-key-id: ${{ secrets.build_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.build_AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.BUILDS_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.BUILDS_AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-1
       - name: Run CodeBuild 
         id: run-codebuild-postgres

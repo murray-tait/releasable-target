@@ -2,7 +2,7 @@ name: build and test
 on: push
 jobs:
   codebuild:
-    runs-on: ubunut-latest
+    runs-on: ubuntu-latest
     steps:
       - name: '"AWS CodeBuild run build" Action For GitHub Actions'
         uses: aws-actions/configure-aws-credentials@v1

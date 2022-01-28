@@ -23,6 +23,14 @@ ${build_dir}/lambda.zip: src/main/bash/*
 	cp src/main/bash/* target/lambda
 	cd target/lambda && zip -ur ../lambda.zip * && cd ../..
 
+${build_dir}/terraform.zip: src/main/cdk/*
+	mkdir -p ${build_dir}/terraform
+	rm -rf target/terraform/*
+	mkdir -p ${build_dir}/terraform/src/main/cdk
+	rm -f $@
+	rsync -a src/main/cdk/* target/terraform/src/main/cdk
+	cd target/terraform && zip -ur ../terraform.zip * && cd ../..
+
 ${build_dir}/web.zip: src/main/web/*
 	mkdir -p ${build_dir}/web
 	rm -rf target/web/*

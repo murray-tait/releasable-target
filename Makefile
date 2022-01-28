@@ -14,6 +14,12 @@ CODEBUILD_BUILD_ID ?= uk-nhs-devspineservices-pdspoc:${CODEBUILD_UUID}
 
 build_dir := target
 
+install-poetry:
+
+src/main/cdk/.venv: 
+	cd src/main/cdk && poetry install
+
+
 default:
 
 ${build_dir}/lambda.zip: src/main/bash/*
@@ -56,31 +62,36 @@ default: build
 
 all: clean install
 
-tf-workspace-%:yes
+tf-workspace-%:
 	mkdir -p target/cdktf/stacks/release
 	cd target/cdktf/stacks/release && terraform init
+	. src/main/cdk/.venv/bin/activate
 	cd src/main/cdk && cdktf synth 
 	cd target/cdktf/stacks/release && terraform workspace select $*
 
 tf-get:
 	cd src/main/cdk && cdktf get
 
-tf-plan:
-	cd src/main/cdk && cdktf synth
-	cd target/cdktf/stacks/release && terraform plan
-
 tf-synth:
+	. src/main/cdk/.venv/bin/activate
 	cd src/main/cdk && cdktf synth
+
+
 
 tf-diff:
+	. src/main/cdk/.venv/bin/activate
 	cd src/main/cdk  && \
-	. .venv/bin/activate && \
 	cdktf diff
 
 tf-deploy:
+	. src/main/cdk/.venv/bin/activate
 	cd src/main/cdk && cdktf deploy
 
-tf-apply:
+tf-plan: tf-synth
 	cd src/main/cdk && cdktf synth
+	cd target/cdktf/stacks/release && terraform plan
+
+tf-apply: tf-synth
+	. src/main/cdk/.venv/bin/activate
 	cd target/cdktf/stacks/release && terraform apply --auto-approve
 

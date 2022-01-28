@@ -1,0 +1,23 @@
+name: build and test
+on: push
+jobs:
+  codebuild:
+    runs-on: ubunut-latest
+    steps:
+      - name: '"AWS CodeBuild run build" Action For GitHub Actions'
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.build_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.build_AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-1
+      - name: Run CodeBuild 
+        id: run-codebuild-postgres
+        uses: aws-actions/aws-codebuild-run-build@v1.0.3
+        with:
+          project-name: releasable-target_initial_build
+          env-vars-for-codebuild: ref, sha , event_name
+        env:
+          ref: ${{ github.ref }}
+          event_name: ${{ github.event_name }}
+          sha: ${{ github.sha }}
+          

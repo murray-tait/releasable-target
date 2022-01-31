@@ -1,7 +1,16 @@
 version: 0.2
 phases:
+  install:
+    runtime-versions:
+      python: 3.8
+      nodejs: 14
   pre_build:
     commands:
+     - update-ca-certificates    
+     - echo ${ref}
+     - echo ${sha}
+     - echo ${event_name}
+     - . config.sh
      - BUILD_VERSION="${CODEBUILD_RESOLVED_SOURCE_VERSION:="XXXXXX"}"
      - export SHA1_START=`echo ${BUILD_VERSION} | cut -c -2`
      - export SHA1_END=`echo ${BUILD_VERSION} | cut -c 3-`

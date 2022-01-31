@@ -8,14 +8,14 @@ from cdktf_cdktf_provider_aws.iam import IamRole, IamRolePolicyAttachment, IamPo
 from cdktf_cdktf_provider_aws.acm import DataAwsAcmCertificate
 from cdktf_cdktf_provider_aws.route53 import DataAwsRoute53Zone
 from cdktf_cdktf_provider_aws.wafregional import DataAwsWafregionalWebAcl
-from cdktf import App, TerraformHclModule, TerraformLocal, TerraformOutput, S3Backend, TerraformStack
+from cdktf import App, TerraformHclModule, TerraformLocal, S3Backend, TerraformStack
 from cdktf_cdktf_provider_aws.cloudwatch import CloudwatchLogGroup
 from constructs import Construct
 
-from terraform.shared import Shared
-from terraform.provider_factory import ProviderFactory
-from terraform.accounts import Accounts
-from terraform.config import Config
+from murraytait_cdktf.shared import Shared
+from murraytait_cdktf.provider_factory import ProviderFactory
+from murraytait_cdktf.accounts import Accounts
+from murraytait_cdktf.config import Config
 
 
 class MyStack(TerraformStack):
@@ -238,7 +238,7 @@ class MyStack(TerraformStack):
         try:
             with open(scope.outdir + '/stacks/' + ns + '/.terraform/environment', 'r') as reader:
                 environment = reader.read()
-        except:
+        except IOError:
             pass
         return environment
 

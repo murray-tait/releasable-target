@@ -9,8 +9,8 @@ python = "^3.8"
 cdktf = "0.8.6"
 cdktf-cdktf-provider-aws = "4.0.2"
 boto3 = "^1.20.12"
-terraform = { path = "../../../../terraform/", develop = true }
 pytest-mock = "^3.6.1"
+murraytait-cdktf = "^0.1.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"

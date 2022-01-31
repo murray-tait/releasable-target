@@ -12,7 +12,9 @@ phases:
      - echo ${event_name}
      - export GIT_SHA=${sha}
      - export GIT_REF=${ref}
+     - make src/main/cdk/.venv
      - . ./config.sh
+     - src/main/cdk/.venv
   build:
     commands:
      - make clean install

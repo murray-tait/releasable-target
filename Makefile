@@ -49,11 +49,11 @@ clean:
 
 install: build
 	aws s3 cp --no-progress target/lambda.zip s3://${S3_BUILD_BUCKET}/builds/releasable/objects/${SHA1_START}/${SHA1_END}/lambda.zip
-	aws s3 cp --no-progress target/lambda.zip s3://${S3_BUILD_BUCKET}/builds/releasable/refs/${GIT_REF}/lambda.zip
+	aws s3 cp --no-progress target/lambda.zip s3://${S3_BUILD_BUCKET}/builds/releasable/${GIT_REF}/lambda.zip
 	aws s3 cp --no-progress target/cloudfront.zip s3://${S3_BUILD_BUCKET}/builds/releasable/objects/${SHA1_START}/${SHA1_END}/cloudfront.zip
-	aws s3 cp --no-progress target/cloudfront.zip s3://${S3_BUILD_BUCKET}/builds/releasable/refs/${GIT_REF}/cloudfront.zip
+	aws s3 cp --no-progress target/cloudfront.zip s3://${S3_BUILD_BUCKET}/builds/releasable/${GIT_REF}/cloudfront.zip
 	aws s3 cp --no-progress target/terraform.zip s3://${S3_BUILD_BUCKET}/builds/releasable/objects/${SHA1_START}/${SHA1_END}/terraform.zip
-	aws s3 cp --no-progress target/terraform.zip s3://${S3_BUILD_BUCKET}/builds/releasable/refs/${GIT_REF}/terraform.zip
+	aws s3 cp --no-progress target/terraform.zip s3://${S3_BUILD_BUCKET}/builds/releasable/${GIT_REF}/terraform.zip
 
 default: build
 

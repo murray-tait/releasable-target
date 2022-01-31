@@ -51,18 +51,16 @@ clean:
 	rm -rf target/*
 
 install: build
-	@if [ "${GIT_DIRTY}" = "false" ] ; \
-	then \	
-		aws s3 cp --no-progress target/lambda.zip ${S3_OBJECT_LOCATION}/lambda.zip ; \
-		aws s3 cp --no-progress target/cloudfront.zip ${S3_OBJECT_LOCATION}/cloudfront.zip ; \
-		aws s3 cp --no-progress target/terraform.zip ${S3_OBJECT_LOCATION}/terraform.zip ; \
+	@if [ "${GIT_DIRTY}" = "false" ]; then \
+		aws s3 cp --no-progress target/lambda.zip ${S3_OBJECT_LOCATION}/lambda.zip; \
+		aws s3 cp --no-progress target/cloudfront.zip ${S3_OBJECT_LOCATION}/cloudfront.zip; \
+		aws s3 cp --no-progress target/terraform.zip ${S3_OBJECT_LOCATION}/terraform.zip; \
 	fi
 
-	if [ "${GIT_REF_TYPE}" = "branch"] || [ "${GIT_DIRTY}" = "false"] ; \
-	then \
-		aws s3 cp --no-progress target/cloudfront.zip ${S3_REF_LOCATION}/cloudfront.zip ; \
+	if [ "${GIT_REF_TYPE}" = "branch" ] || [ "${GIT_DIRTY}" = "false" ]; then \
+		aws s3 cp --no-progress target/cloudfront.zip ${S3_REF_LOCATION}/cloudfront.zip; \
 		aws s3 cp --no-progress target/lambda.zip ${S3_REF_LOCATION}/lambda.zip ; \
-		aws s3 cp --no-progress target/terraform.zip ${S3_REF_LOCATION}/terraform.zip ; \
+		aws s3 cp --no-progress target/terraform.zip ${S3_REF_LOCATION}/terraform.zip; \
 	fi
 
 default: build

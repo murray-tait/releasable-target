@@ -14,6 +14,7 @@ ARTIFACT_NAME := releasable
 src/main/cdk/.venv:
 	cd src/main/cdk && \
 	python3 -m venv .venv && \
+	. .venv/bin/activate \
 	python3 -m pip install --upgrade pip && \
 	python3 -m pip install poetry && \
 	poetry install\

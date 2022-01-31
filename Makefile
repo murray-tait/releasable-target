@@ -12,12 +12,11 @@ S3_BUILD_BUCKET ?= org.murraytait.experiment.build.builds
 ARTIFACT_NAME := releasable
 
 install-poetry:
+    python3 -m pip install --upgrade pip
+    python3 -m pip install poetry
 
-src/main/cdk/.venv: 
+src/main/cdk/.venv: install-poetry
 	cd src/main/cdk && poetry install
-
-
-default:
 
 ${build_dir}/lambda.zip: src/main/bash/*
 	mkdir -p ${build_dir}/lambda

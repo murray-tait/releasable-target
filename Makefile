@@ -1,18 +1,15 @@
-CODEBUILD_SOURCE_VERSION ?= $(shell git rev-parse HEAD)
-SHA1_START := $(shell echo ${CODEBUILD_SOURCE_VERSION} | cut -c -2)
-SHA1_END := $(shell echo ${CODEBUILD_SOURCE_VERSION} | cut -c 3-)
-S3_BUILD_BUCKET ?= org.murraytait.experiment.build.builds
-AWS_PROFILE ?= "973963482762_AWSPowerUserAccess"
-CODEBUILD_WEBHOOK_TRIGGER ?= branch/$(shell git rev-parse --abbrev-ref HEAD)
-ARTIFACT_NAME := pdsfhirapi
-GIT_CHANGES = $(shell git diff --stat)
-GIT_DIRTY ?= $(if ${GIT_CHANGES},true,false)
+GIT_REF ?= refs/heads/$(shell git rev-parse --abbrev-ref HEAD)
+GIT_SHA ?= $(shell git rev-parse HEAD)
+SHA1_START := $(shell echo ${GIT_SHA} | cut -c -2)
+SHA1_END := $(shell echo ${GIT_SHA} | cut -c 3-)
+GIT_DIRTY ?= $(if $(shell git diff --stat),true,false)
 
-GITHUB_REF ?= refs/heads$(shell echo ${CODEBUILD_WEBHOOK_TRIGGER} | cut -c 7-)
 CODEBUILD_UUID := $(shell cat /proc/sys/kernel/random/uuid)
 CODEBUILD_BUILD_ID ?= uk-nhs-devspineservices-pdspoc:${CODEBUILD_UUID}
 
 build_dir := target
+S3_BUILD_BUCKET ?= org.murraytait.experiment.build.builds
+ARTIFACT_NAME := releasable
 
 install-poetry:
 
@@ -52,11 +49,11 @@ clean:
 
 install: build
 	aws s3 cp --no-progress target/lambda.zip s3://${S3_BUILD_BUCKET}/builds/releasable/objects/${SHA1_START}/${SHA1_END}/lambda.zip
-	aws s3 cp --no-progress target/lambda.zip s3://${S3_BUILD_BUCKET}/builds/releasable/refs/${CODEBUILD_WEBHOOK_TRIGGER}/lambda.zip
+	aws s3 cp --no-progress target/lambda.zip s3://${S3_BUILD_BUCKET}/builds/releasable/refs/${GIT_REF}/lambda.zip
 	aws s3 cp --no-progress target/cloudfront.zip s3://${S3_BUILD_BUCKET}/builds/releasable/objects/${SHA1_START}/${SHA1_END}/cloudfront.zip
-	aws s3 cp --no-progress target/cloudfront.zip s3://${S3_BUILD_BUCKET}/builds/releasable/refs/${CODEBUILD_WEBHOOK_TRIGGER}/cloudfront.zip
+	aws s3 cp --no-progress target/cloudfront.zip s3://${S3_BUILD_BUCKET}/builds/releasable/refs/${GIT_REF}/cloudfront.zip
 	aws s3 cp --no-progress target/terraform.zip s3://${S3_BUILD_BUCKET}/builds/releasable/objects/${SHA1_START}/${SHA1_END}/terraform.zip
-	aws s3 cp --no-progress target/terraform.zip s3://${S3_BUILD_BUCKET}/builds/releasable/refs/${CODEBUILD_WEBHOOK_TRIGGER}/terraform.zip
+	aws s3 cp --no-progress target/terraform.zip s3://${S3_BUILD_BUCKET}/builds/releasable/refs/${GIT_REF}/terraform.zip
 
 default: build
 

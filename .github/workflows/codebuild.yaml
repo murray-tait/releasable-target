@@ -25,4 +25,5 @@ jobs:
           ref: ${{ github.ref }}
           event_name: ${{ github.event_name }}
           sha: ${{ github.sha }}
+          ref_type: ${{ github.ref_type }}
           

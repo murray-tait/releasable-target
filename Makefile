@@ -3,13 +3,16 @@ GIT_SHA ?= $(shell git rev-parse HEAD)
 SHA1_START := $(shell echo ${GIT_SHA} | cut -c -2)
 SHA1_END := $(shell echo ${GIT_SHA} | cut -c 3-)
 GIT_DIRTY ?= $(if $(shell git diff --stat),true,false)
+GIT_REF_TYPE ?= branch
+
+S3_OBJECT_LOCATION = s3://${S3_BUILD_BUCKET}/builds/releasable/objects/${SHA1_START}/${SHA1_END}
+S3_REF_LOCATION = s3://${S3_BUILD_BUCKET}/builds/releasable/${GIT_REF}
 
 CODEBUILD_UUID := $(shell cat /proc/sys/kernel/random/uuid)
 CODEBUILD_BUILD_ID ?= uk-nhs-devspineservices-pdspoc:${CODEBUILD_UUID}
 
 build_dir := target
 S3_BUILD_BUCKET ?= org.murraytait.experiment.build.builds
-ARTIFACT_NAME := releasable
 
 src/main/cdk/.venv:
 	cd src/main/cdk && \
@@ -48,12 +51,19 @@ clean:
 	rm -rf target/*
 
 install: build
-	aws s3 cp --no-progress target/lambda.zip s3://${S3_BUILD_BUCKET}/builds/releasable/objects/${SHA1_START}/${SHA1_END}/lambda.zip
-	aws s3 cp --no-progress target/lambda.zip s3://${S3_BUILD_BUCKET}/builds/releasable/${GIT_REF}/lambda.zip
-	aws s3 cp --no-progress target/cloudfront.zip s3://${S3_BUILD_BUCKET}/builds/releasable/objects/${SHA1_START}/${SHA1_END}/cloudfront.zip
-	aws s3 cp --no-progress target/cloudfront.zip s3://${S3_BUILD_BUCKET}/builds/releasable/${GIT_REF}/cloudfront.zip
-	aws s3 cp --no-progress target/terraform.zip s3://${S3_BUILD_BUCKET}/builds/releasable/objects/${SHA1_START}/${SHA1_END}/terraform.zip
-	aws s3 cp --no-progress target/terraform.zip s3://${S3_BUILD_BUCKET}/builds/releasable/${GIT_REF}/terraform.zip
+	@if [ "${GIT_DIRTY}" = "false" ] ; \
+	then \	
+		aws s3 cp --no-progress target/lambda.zip ${S3_OBJECT_LOCATION}/lambda.zip ; \
+		aws s3 cp --no-progress target/cloudfront.zip ${S3_OBJECT_LOCATION}/cloudfront.zip ; \
+		aws s3 cp --no-progress target/terraform.zip ${S3_OBJECT_LOCATION}/terraform.zip ; \
+	fi
+
+	if [ "${GIT_REF_TYPE}" = "branch"] || [ "${GIT_DIRTY}" = "false"] ; \
+	then \
+		aws s3 cp --no-progress target/cloudfront.zip ${S3_REF_LOCATION}/cloudfront.zip ; \
+		aws s3 cp --no-progress target/lambda.zip ${S3_REF_LOCATION}/lambda.zip ; \
+		aws s3 cp --no-progress target/terraform.zip ${S3_REF_LOCATION}/terraform.zip ; \
+	fi
 
 default: build
 
@@ -72,8 +82,6 @@ tf-get:
 tf-synth:
 	. src/main/cdk/.venv/bin/activate
 	cd src/main/cdk && cdktf synth
-
-
 
 tf-diff:
 	. src/main/cdk/.venv/bin/activate

@@ -22,6 +22,9 @@ CODEBUILD_BUILD_ID ?= uk-nhs-devspineservices-pdspoc:${CODEBUILD_UUID}
 clean:
 	rm -rf ${build_dir}
 
+${NODE_PATH}/cdltf:
+	npm install --local cdktf-cli@latest
+
 ${CDK_VENV_BASE}.venv:
 	cd ${CDK_VENV_BASE} && \
 	python3 -m venv .venv && \
@@ -29,6 +32,9 @@ ${CDK_VENV_BASE}.venv:
 	python3 -m pip install --upgrade pip && \
 	python3 -m pip install poetry && \
 	poetry install
+
+poetry-activate: ${CDK_VENV_BASE}.venv
+	. ${CDK_VENV_BASE}/.venv/bin/activate
 
 ${build_dir}/lambda.zip: src/main/bash/*
 	mkdir -p ${build_dir}/lambda
@@ -80,30 +86,20 @@ tf-workspace-%: ${CDK_STACK}
 	${NODE_PATH}/cdktf synth 
 	cd ${CDK_STACK} && terraform workspace select $*
 
-tf-get:
-	. ${CDK_VENV_BASE}/.venv/bin/activate && \
-	cd ${CDK_SRC} && \
-	${NODE_PATH}/cdktf get
+tf-get: poetry-activate
+	cd ${CDK_SRC} && ${NODE_PATH}/cdktf get
 
-tf-synth:
-	. ${CDK_VENV_BASE}/.venv/bin/activate
-	cd ${CDK_SRC} && \
-	${NODE_PATH}/cdktf synth
+tf-synth: poetry-activate
+	cd ${CDK_SRC} && ${NODE_PATH}/cdktf synth
 
-tf-diff:
-	. ${CDK_VENV_BASE}/.venv/bin/activate && \
-	cd ${CDK_SRC} && \
-	${NODE_PATH}/cdktf diff
+tf-diff: poetry-activate
+	cd ${CDK_SRC} && ${NODE_PATH}/cdktf diff
 
-tf-deploy:
-	. ${CDK_VENV_BASE}/.venv/bin/activate
-	cd ${CDK_SRC} && \
-	${NODE_PATH}/cdktf deploy
+tf-deploy: poetry-activate
+	cd ${CDK_SRC} && ${NODE_PATH}/cdktf deploy
 
-tf-plan: tf-synth
-	. ${CDK_VENV_BASE}/.venv/bin/activate && \
+tf-plan: poetry-activate tf-synth
 	cd ${CDK_STACK} && terraform plan
 
-tf-apply: tf-synth
-	. ${CDK_VENV_BASE}/.venv/bin/activate && \
+tf-apply: poetry-activate tf-synth
 	cd ${CDK_STACK} && terraform apply --auto-approve

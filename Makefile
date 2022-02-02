@@ -19,13 +19,21 @@ S3_REF_LOCATION = s3://${S3_BUILD_BUCKET}/builds/${ARTIFACT_NAME}/${GIT_REF}
 CODEBUILD_UUID := $(shell cat /proc/sys/kernel/random/uuid)
 CODEBUILD_BUILD_ID ?= uk-nhs-devspineservices-pdspoc:${CODEBUILD_UUID}
 
+.PHONY: poetry-activate clean install upload tf-*
+
 clean:
 	rm -rf ${build_dir}
 
-${NODE_PATH}/cdltf:
+${NODE_PATH}/cdktf:
 	npm install --local cdktf-cli@latest
 
-${CDK_VENV_BASE}.venv:
+${CDK_VENV_BASE}/poetry.lock:
+
+${CDK_VENV_BASE}/pyproject.toml:
+
+${CDK_VENV_BASE}/poetry.toml:
+
+${CDK_VENV_BASE}/.venv: ${CDK_VENV_BASE}/poetry.lock ${CDK_VENV_BASE}/pyproject.toml ${CDK_VENV_BASE}/poetry.toml
 	cd ${CDK_VENV_BASE} && \
 	python3 -m venv .venv && \
 	. .venv/bin/activate \
@@ -33,7 +41,9 @@ ${CDK_VENV_BASE}.venv:
 	python3 -m pip install poetry && \
 	poetry install
 
-poetry-activate: ${CDK_VENV_BASE}.venv
+install: node_modules/.bin/cdktf ${CDK_VENV_BASE}/.venv
+
+poetry-activate: ${CDK_VENV_BASE}/.venv
 	. ${CDK_VENV_BASE}/.venv/bin/activate
 
 ${build_dir}/lambda.zip: src/main/bash/*
@@ -45,11 +55,11 @@ ${build_dir}/lambda.zip: src/main/bash/*
 
 ${build_dir}/terraform.zip: ${CDK_SRC}/*
 	mkdir -p ${build_dir}/terraform
-	rm -rf target/terraform/*
+	rm -rf ${build_dir}/terraform/*
 	mkdir -p ${build_dir}/terraform/${CDK_SRC}
 	rm -f $@
 	rsync -a ${CDK_SRC}/* ${build_dir}/terraform/${CDK_SRC}
-	cd target/terraform && zip -ur ../terraform.zip * && cd ../..
+	cd ${build_dir}/terraform && zip -ur ../terraform.zip * && cd ../..
 
 ${build_dir}/web.zip: src/main/web/*
 	mkdir -p ${build_dir}/web
@@ -59,19 +69,19 @@ ${build_dir}/web.zip: src/main/web/*
 	rsync -a --exclude='config.js' src/main/web/* target/web
 	cd target/web && zip -ur ../cloudfront.zip * && cd ../..
 
-build: ${build_dir}/terraform.zip ${build_dir}/lambda.zip ${build_dir}/web.zip
- 
-install: build
+build: ${build_dir}/terraform.zip
+
+upload-builds: build
 	@if [ "${GIT_DIRTY}" = "false" ]; then \
-		aws s3 cp --no-progress target/lambda.zip ${S3_OBJECT_LOCATION}/lambda.zip; \
-		aws s3 cp --no-progress target/cloudfront.zip ${S3_OBJECT_LOCATION}/cloudfront.zip; \
-		aws s3 cp --no-progress target/terraform.zip ${S3_OBJECT_LOCATION}/terraform.zip; \
+		aws s3 cp --no-progress ${build_dir}/lambda.zip ${S3_OBJECT_LOCATION}/lambda.zip; \
+		aws s3 cp --no-progress ${build_dir}/cloudfront.zip ${S3_OBJECT_LOCATION}/cloudfront.zip; \
+		aws s3 cp --no-progress ${build_dir}/terraform.zip ${S3_OBJECT_LOCATION}/terraform.zip; \
 	fi
 
 	if [ "${GIT_REF_TYPE}" = "branch" ] || [ "${GIT_DIRTY}" = "false" ]; then \
-		aws s3 cp --no-progress target/cloudfront.zip ${S3_REF_LOCATION}/cloudfront.zip; \
-		aws s3 cp --no-progress target/lambda.zip ${S3_REF_LOCATION}/lambda.zip ; \
-		aws s3 cp --no-progress target/terraform.zip ${S3_REF_LOCATION}/terraform.zip; \
+		aws s3 cp --no-progress ${build_dir}/cloudfront.zip ${S3_REF_LOCATION}/cloudfront.zip; \
+		aws s3 cp --no-progress ${build_dir}/lambda.zip ${S3_REF_LOCATION}/lambda.zip ; \
+		aws s3 cp --no-progress ${build_dir}/terraform.zip ${S3_REF_LOCATION}/terraform.zip; \
 	fi
 
 ${CDK_STACK}:
@@ -89,7 +99,7 @@ tf-workspace-%: ${CDK_STACK}
 tf-get: poetry-activate
 	cd ${CDK_SRC} && ${NODE_PATH}/cdktf get
 
-tf-synth: poetry-activate
+tf-synth: poetry-activate ${NODE_PATH}/cdktf
 	cd ${CDK_SRC} && ${NODE_PATH}/cdktf synth
 
 tf-diff: poetry-activate

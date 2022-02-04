@@ -3,7 +3,7 @@ ARTIFACT_NAME := releasable
 CDK_STACK=${build_dir}/cdktf/stacks/release
 CDK_SRC=src/main/cdk
 CDK_VENV_BASE=src/main/cdk
-NODE_PATH=$(shell pwd)/node_modules/.bin
+NODE_PATH ?= $(shell pwd)/node_modules/.bin
 
 S3_BUILD_BUCKET ?= org.murraytait.experiment.build.builds
 GIT_REF ?= refs/heads/$(shell git rev-parse --abbrev-ref HEAD)
@@ -41,7 +41,7 @@ ${CDK_VENV_BASE}/.venv: ${CDK_VENV_BASE}/poetry.lock ${CDK_VENV_BASE}/pyproject.
 	python3 -m pip install poetry && \
 	poetry install
 
-install: node_modules/.bin/cdktf ${CDK_VENV_BASE}/.venv
+install: ${NODE_PATH}/cdktf ${CDK_VENV_BASE}/.venv
 
 poetry-activate: ${CDK_VENV_BASE}/.venv
 	. ${CDK_VENV_BASE}/.venv/bin/activate

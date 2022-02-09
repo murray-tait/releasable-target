@@ -24,7 +24,7 @@ CODEBUILD_BUILD_ID ?= uk-nhs-devspineservices-pdspoc:${CODEBUILD_UUID}
 clean:
 	rm -rf ${build_dir}
 
-${NODE_PATH}/cdktf:
+node_modules/.bin/cdktf:
 	npm install --local cdktf-cli@latest
 
 ${CDK_VENV_BASE}/poetry.lock:
@@ -41,10 +41,13 @@ ${CDK_VENV_BASE}/.venv: ${CDK_VENV_BASE}/poetry.lock ${CDK_VENV_BASE}/pyproject.
 	python3 -m pip install poetry && \
 	poetry install
 
-install: ${NODE_PATH}/cdktf ${CDK_VENV_BASE}/.venv
+install: node_modules/.bin/cdktf ${CDK_VENV_BASE}/.venv
 
 poetry-activate: ${CDK_VENV_BASE}/.venv
 	. ${CDK_VENV_BASE}/.venv/bin/activate
+
+${build_dir}:
+	mkdir -p ${build_dir}
 
 ${build_dir}/lambda.zip: src/main/bash/*
 	mkdir -p ${build_dir}/lambda

@@ -20,7 +20,7 @@ jobs:
         id: run-codebuild-postgres
         uses: aws-actions/aws-codebuild-run-build@v1.0.3
         with:
-          project-name: releasable-target_initial_build
+          project-name: releasable_initial_build
           env-vars-for-codebuild: ref, sha , event_name
         env:
           ref: ${{ github.ref }}

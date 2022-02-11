@@ -27,4 +27,20 @@ jobs:
           event_name: ${{ github.event_name }}
           sha: ${{ github.sha }}
           ref_type: ${{ github.ref_type }}
-          
+      - name: Retrieve test reports from CodeBuild
+        if: success() || failure()
+        run: |
+          echo ${{ steps.run-codebuild.outputs }} 
+          aws s3 sync s3://org.murraytait.experiment.build.reports/reports/${{ steps.run-codebuild-postgres.outputs.aws-build-id }}/ build/test-reports 
+      - name: Archive test reports
+        if: success() || failure()
+        uses: actions/upload-artifact@v2.2.3
+        with:
+          name: unittest-reports
+          path: build/test-reports/*
+      - name: Publish Test Report
+        if: success() || failure()
+        uses: mikepenz/action-junit-report@v2
+        with:
+          check_name: Postgres Behave Tests
+          report_paths: build/test-reports/unittest.xml

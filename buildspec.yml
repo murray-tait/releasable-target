@@ -19,3 +19,9 @@ phases:
   build:
     commands:
      - make clean upload-builds
+reports:
+  releasable:
+    files:
+      - "*.xml"
+    base-directory: "build/test-reports"
+    file-format: "JUNITXML"

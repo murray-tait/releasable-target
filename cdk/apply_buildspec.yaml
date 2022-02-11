@@ -1,0 +1,27 @@
+version: 0.1
+phases:
+  install:
+    runtime-versions:
+      python: 3.8
+      nodejs: 14
+    commands:
+      - "apt install unzip -y"
+      - "wget https://releases.hashicorp.com/terraform/0.14.10/terraform_0.14.10_linux_amd64.zip"
+      - "unzip terraform_0.14.10_linux_amd64.zip"
+      - "mv terraform /usr/local/bin/"
+      - npm install --global cdktf-cli@latest
+  pre_build:
+    commands:
+      - mkdir -p target/cdktf/stacks/release
+      - cd target/cdktf/stacks/release && terraform init
+      - cd src/main/cdk && cdktf synth
+      - cd target/cdktf/stacks/release && terraform workspace select endtoend
+  build:
+    commands:
+      - cd src/main/cdk  && \
+      - . .venv/bin/activate && \
+      - cdktf diff
+      - terraform -chdir=Terraform $TF_COMMAND_A -input=false -auto-approve
+  post_build:
+    commands:
+      - echo terraform $TF_COMMAND_A completed on `date`

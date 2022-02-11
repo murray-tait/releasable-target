@@ -39,3 +39,4 @@ node_modules
 src/main/cdk/__pycache__/*
 src/main/cdk/modules
 src/main/cdk/cdktf.out/*
+**/__pycache__/*

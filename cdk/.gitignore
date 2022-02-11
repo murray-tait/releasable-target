@@ -1,8 +1,0 @@
-dist/
-imports/*
-!imports/__init__.py
-.terraform
-cdktf.out/**/manifest.json
-cdktf.out/**/cdk.tf.json
-cdktf.log
-*terraform.*.tfstate*

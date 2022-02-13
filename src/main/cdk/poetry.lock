@@ -141,6 +141,19 @@ python-dateutil = "*"
 typing-extensions = ">=3.7,<5.0"
 
 [[package]]
+name = "mock"
+version = "4.0.3"
+description = "Rolling backport of unittest.mock for all Pythons"
+category = "dev"
+optional = false
+python-versions = ">=3.6"
+
+[package.extras]
+build = ["twine", "wheel", "blurb"]
+docs = ["sphinx"]
+test = ["pytest (<5.4)", "pytest-cov"]
+
+[[package]]
 name = "murraytait-cdktf"
 version = "0.1.0"
 description = ""
@@ -305,7 +318,7 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "56bb0ce050f6f1db7a2b934788e8b21b1eddf5ff9c1185607e206a5bdc920a5b"
+content-hash = "e85280963ce005144968cd10f2858cc131a598499097e719dc083ba56c67f885"
 
 [metadata.files]
 atomicwrites = [
@@ -355,6 +368,10 @@ jmespath = [
 jsii = [
     {file = "jsii-1.52.0-py3-none-any.whl", hash = "sha256:48e756d51aa010e5eab43b01e090df1cb866a4a92afa22edb12c926ae1be1b06"},
     {file = "jsii-1.52.0.tar.gz", hash = "sha256:88391756b2a359b05c84886d96620a30578053c557da4080e191cae2f4ab816d"},
+]
+mock = [
+    {file = "mock-4.0.3-py3-none-any.whl", hash = "sha256:122fcb64ee37cfad5b3f48d7a7d51875d7031aaf3d8be7c42e2bee25044eee62"},
+    {file = "mock-4.0.3.tar.gz", hash = "sha256:7d3fbbde18228f4ff2f1f119a45cdffa458b4c0dee32eb4d2bb2f82554bac7bc"},
 ]
 murraytait-cdktf = [
     {file = "murraytait_cdktf-0.1.0-py3-none-any.whl", hash = "sha256:8d05bdb306a89ea678e5bba18d83a35b3f251eb1a1f8e82fe8f38fc0660e56ac"},

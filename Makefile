@@ -78,18 +78,18 @@ ${build_dir}/web.zip: src/main/web/*
 	rsync -a --exclude='config.js' src/main/web/* target/web
 	cd target/web && zip -ur ../cloudfront.zip * && cd ../..
 
-build: ${build_dir}/terraform.zip
+build: ${build_dir}/terraform.zip ${build_dir}/web.zip  ${build_dir}/lambda.zip
 
 upload-builds: build
 	@if [ "${GIT_DIRTY}" = "false" ]; then \
 		aws s3 cp --no-progress ${build_dir}/lambda.zip ${S3_OBJECT_LOCATION}/lambda.zip; \
-		aws s3 cp --no-progress ${build_dir}/cloudfront.zip ${S3_OBJECT_LOCATION}/cloudfront.zip; \
+		aws s3 cp --no-progress ${build_dir}/web.zip ${S3_OBJECT_LOCATION}/web.zip; \
 		aws s3 cp --no-progress ${build_dir}/terraform.zip ${S3_OBJECT_LOCATION}/terraform.zip; \
 	fi
 
 	if [ "${GIT_REF_TYPE}" = "branch" ] || [ "${GIT_DIRTY}" = "false" ]; then \
 		aws s3 cp --no-progress ${build_dir}/cloudfront.zip ${S3_REF_LOCATION}/cloudfront.zip; \
-		aws s3 cp --no-progress ${build_dir}/lambda.zip ${S3_REF_LOCATION}/lambda.zip ; \
+		aws s3 cp --no-progress ${build_dir}/web.zip ${S3_REF_LOCATION}/web.zip ; \
 		aws s3 cp --no-progress ${build_dir}/terraform.zip ${S3_REF_LOCATION}/terraform.zip; \
 	fi
 

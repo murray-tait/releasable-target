@@ -63,7 +63,7 @@ ${build_dir}/lambda.zip: src/main/bash/*
 unittest: src/main/cdk/.venv
 	cd ${CDK_VENV_BASE} && \
 	. .venv/bin/activate && \
-	GIT_REF=${GIT_REF} poetry run pytest --junitxml=${build_dir}/test-reports/unittest.xml --html=${build_dir}/test-reports/html/unittest.html
+	GIT_REF=${GIT_REF} poetry run pytest --junitxml=../../../${build_dir}/test-reports/unittest.xml --html=../../../${build_dir}/test-reports/html/unittest.html
 
 ${build_dir}/terraform.zip: ${CDK_SRC}/*
 	mkdir -p ${build_dir}/terraform
@@ -98,13 +98,13 @@ upload-builds: build-all
 
 upload-reports: 
 	@if [ "${GIT_DIRTY}" = "false" ]; then \
-		aws s3 cp --no-progress ./build/test-reports/unittest.xml ${S3_REPORTS_OBJECT_LOCATION}/unittest.xml; \
-        aws s3 cp --no-progress --recursive --include "*" ./build/test-reports/html/ ${REPORTS_S3_OBJECT_LOCATION}/html; \
+		aws s3 cp --no-progress ./build/test-reports/unittest.xml ${S3_REPORT_OBJECT_LOCATION}/unittest.xml; \
+        aws s3 cp --no-progress --recursive --include "*" ./build/test-reports/html/ ${S3_REPORT_OBJECT_LOCATION}/html; \
 	fi
 
 	if [ "${GIT_REF_TYPE}" = "branch" ] || [ "${GIT_DIRTY}" = "false" ]; then \
-		aws s3 cp --no-progress ./build/test-reports/unittest.xml ${S3_REPORTS_REF_LOCATION}/unittest.xml; \
-        aws s3 cp --no-progress --recursive --include "*" ./build/test-reports/html/ ${S3_REPORTS_REF_LOCATION}/html; \
+		aws s3 cp --no-progress ${build_dir}/test-reports/unittest.xml ${S3_REPORT_REF_LOCATION}/unittest.xml; \
+        aws s3 cp --no-progress --recursive --include "*" ${build_dir}/test-reports/html/ ${S3_REPORT_REF_LOCATION}/html; \
 	fi
 
 ${CDK_STACK}:

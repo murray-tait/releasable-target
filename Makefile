@@ -19,7 +19,7 @@ S3_REF_LOCATION = s3://${S3_BUILD_BUCKET}/builds/${ARTIFACT_NAME}/${GIT_REF}
 CODEBUILD_UUID := $(shell cat /proc/sys/kernel/random/uuid)
 CODEBUILD_BUILD_ID ?= uk-nhs-devspineservices-pdspoc:${CODEBUILD_UUID}
 
-.PHONY: poetry-activate clean install upload tf-*
+.PHONY: poetry-activate clean install upload tf-* upload-builds build-all unittest
 
 clean:
 	rm -rf ${build_dir}
@@ -78,9 +78,9 @@ ${build_dir}/web.zip: src/main/web/*
 	rsync -a --exclude='config.js' src/main/web/* target/web
 	cd target/web && zip -ur ../cloudfront.zip * && cd ../..
 
-build: ${build_dir}/terraform.zip ${build_dir}/web.zip  ${build_dir}/lambda.zip
+build-all: ${build_dir}/terraform.zip ${build_dir}/web.zip  ${build_dir}/lambda.zip
 
-upload-builds: build
+upload-builds: build-all
 	@if [ "${GIT_DIRTY}" = "false" ]; then \
 		aws s3 cp --no-progress ${build_dir}/lambda.zip ${S3_OBJECT_LOCATION}/lambda.zip; \
 		aws s3 cp --no-progress ${build_dir}/web.zip ${S3_OBJECT_LOCATION}/web.zip; \

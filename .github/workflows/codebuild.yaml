@@ -32,7 +32,7 @@ jobs:
         run: |
           SHA1_START=${{ github.sha }} | cut -c -2
           SHA1_END=${{ github.sha }} | cut -c 3-
-          aws s3 sync s3://org.murraytait.experiment.build.reports/reports/releasable/objects/${SHA1_START}/${SHA1_END}
+          aws s3 sync build/ s3://org.murraytait.experiment.build.reports/reports/releasable/objects/${SHA1_START}/${SHA1_END}
       - name: Archive test reports
         if: success() || failure()
         uses: actions/upload-artifact@v2.2.3

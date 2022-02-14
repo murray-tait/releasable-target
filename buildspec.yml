@@ -21,7 +21,7 @@ phases:
      - make clean
      - make unittest 
      - make upload-builds
-  post-build:
+  post_build:
     commands:
      - make upload-reports
 

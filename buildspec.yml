@@ -19,7 +19,7 @@ phases:
   build:
     commands:
      - make clean
-     - make unitest 
+     - make unittest 
      - make upload-builds
 reports:
   unittest:

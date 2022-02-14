@@ -18,9 +18,11 @@ phases:
      - . src/main/cdk/.venv/bin/activate
   build:
     commands:
-     - make clean upload-builds
+     - make clean
+     - make unitest 
+     - make upload-builds
 reports:
-  releasable:
+  unittest:
     files:
       - "*.xml"
     base-directory: "build/test-reports"

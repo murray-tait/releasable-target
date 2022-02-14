@@ -33,28 +33,34 @@ ${CDK_VENV_BASE}/pyproject.toml:
 
 ${CDK_VENV_BASE}/poetry.toml:
 
-${CDK_VENV_BASE}/.venv: ${CDK_VENV_BASE}/poetry.lock ${CDK_VENV_BASE}/pyproject.toml ${CDK_VENV_BASE}/poetry.toml
+src/main/cdk/.venv: ${CDK_VENV_BASE}/poetry.lock ${CDK_VENV_BASE}/pyproject.toml ${CDK_VENV_BASE}/poetry.toml
 	cd ${CDK_VENV_BASE} && \
 	python3 -m venv .venv && \
 	. .venv/bin/activate \
 	python3 -m pip install --upgrade pip && \
 	python3 -m pip install poetry && \
 	poetry install
+	touch src/main/cdk/.venv
 
 install: node_modules/.bin/cdktf ${CDK_VENV_BASE}/.venv
 
-poetry-activate: ${CDK_VENV_BASE}/.venv
-	. ${CDK_VENV_BASE}/.venv/bin/activate
+poetry-activate: src/main/cdk/.venv
+	. src/main/cdk/.venv/bin/activate
 
 ${build_dir}:
 	mkdir -p ${build_dir}
 
 ${build_dir}/lambda.zip: src/main/bash/*
 	mkdir -p ${build_dir}/lambda
-	rm -rf target/lambda/*
+	rm -rf ${build_dir}/lambda/*
 	rm -f $@
 	cp src/main/bash/* target/lambda
 	cd target/lambda && zip -ur ../lambda.zip * && cd ../..
+
+unittest: src/main/cdk/.venv
+	cd ${CDK_VENV_BASE} && \
+	. .venv/bin/activate && \
+	GIT_REF=${GIT_REF} poetry run pytest --junitxml=${build_dir}/test-reports/unittest.xml --html=${build_dir}/test-reports/html/unittest.html
 
 ${build_dir}/terraform.zip: ${CDK_SRC}/*
 	mkdir -p ${build_dir}/terraform

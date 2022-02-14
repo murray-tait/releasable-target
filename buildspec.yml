@@ -21,9 +21,7 @@ phases:
      - make clean
      - make unittest 
      - make upload-builds
-reports:
-  unittest:
-    files:
-      - "*.xml"
-    base-directory: "build/test-reports"
-    file-format: "JUNITXML"
+  post-build:
+    commands:
+     - make upload-reports
+

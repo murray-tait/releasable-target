@@ -107,12 +107,12 @@ upload-reports:
 	aws --version
 	@if [ "${GIT_DIRTY}" = "false" ]; then \
 		aws s3 cp --no-progress ${build_dir}/test-reports/unittest.xml ${S3_REPORTS_OBJECT_LOCATION}/unittest.xml; \
-        aws s3 cp --no-progress ${build_dir}/test-reports/html/ ${REPORTS_S3_OBJECT_LOCATION}/html/ --recursive ; \
+        aws s3 cp --no-progress ${build_dir}/test-reports/html ${REPORTS_S3_OBJECT_LOCATION}/html/ --recursive ; \
 	fi
 
 	if [ "${GIT_REF_TYPE}" = "branch" ] || [ "${GIT_DIRTY}" = "false" ]; then \
 		aws s3 cp --no-progress ${build_dir}/test-reports/unittest.xml ${S3_REPORTS_REF_LOCATION}/unittest.xml; \
-        aws s3 cp --no-progress ${build_dir}/test-reports/html/ ${S3_REPORTS_REF_LOCATION}/html/ --recursive ; \
+        aws s3 cp --no-progress ${build_dir}/test-reports/html ${S3_REPORTS_REF_LOCATION}/html/ --recursive ; \
 	fi
 
 ${CDK_STACK}:

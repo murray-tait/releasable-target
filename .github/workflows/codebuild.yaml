@@ -16,17 +16,17 @@ jobs:
           aws-access-key-id: ${{ secrets.BUILDS_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.BUILDS_AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-1
-      # - name: Run CodeBuild 
-      #   id: run-codebuild-postgres
-      #   uses: aws-actions/aws-codebuild-run-build@v1.0.3
-      #   with:
-      #     project-name: releasable_initial_build
-      #     env-vars-for-codebuild: ref, sha , event_name
-      #   env:
-      #     ref: ${{ github.ref }}
-      #     event_name: ${{ github.event_name }}
-      #     sha: ${{ github.sha }}
-      #     ref_type: ${{ github.ref_type }}
+      - name: Run CodeBuild 
+        id: run-codebuild-postgres
+        uses: aws-actions/aws-codebuild-run-build@v1.0.3
+        with:
+          project-name: releasable_initial_build
+          env-vars-for-codebuild: ref, sha , event_name
+        env:
+          ref: ${{ github.ref }}
+          event_name: ${{ github.event_name }}
+          sha: ${{ github.sha }}
+          ref_type: ${{ github.ref_type }}
       - name: Retrieve test reports from CodeBuild
         if: success() || failure()
         run: |

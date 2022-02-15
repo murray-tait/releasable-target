@@ -6,6 +6,7 @@ phases:
       nodejs: 14
   pre_build:
     commands:
+     - apt-get update
      - update-ca-certificates    
      - echo ${ref}
      - echo ${sha}
@@ -16,7 +17,7 @@ phases:
      - make src/main/cdk/.venv
      - export PATH=${PATH}:$(pwd)/node_modules/.bin
      - . src/main/cdk/.venv/bin/activate
-     - make install
+     - apt-get install awscli
   build:
     commands:
      - make clean

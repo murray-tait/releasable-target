@@ -45,11 +45,6 @@ src/main/cdk/.venv: ${CDK_VENV_BASE}/poetry.lock ${CDK_VENV_BASE}/pyproject.toml
 	poetry install
 	touch src/main/cdk/.venv
 
-install-awscli:
-	curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-	unzip awscliv2.zip	>> /dev/null
-	./aws/install --update
-
 install: node_modules/.bin/cdktf ${CDK_VENV_BASE}/.venv install-awscli
 
 poetry-activate: src/main/cdk/.venv
@@ -102,6 +97,7 @@ upload-builds: build-all
 	fi
 
 upload-reports: 
+	git status
 	aws --version
 	@if [ "${GIT_DIRTY}" = "false" ]; then \
 		aws s3 cp --no-progress ${build_dir}/test-reports/unittest.xml ${S3_REPORTS_OBJECT_LOCATION}/unittest.xml; \

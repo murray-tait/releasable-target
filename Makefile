@@ -49,7 +49,7 @@ install-awscli:
 	curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 	unzip awscliv2.zip	>> /dev/null
 	./aws/install --update
-	rm -ef aws/
+	rm -rf aws/
 	rm awscliv2.zip
 
 install: node_modules/.bin/cdktf ${CDK_VENV_BASE}/.venv install-awscli

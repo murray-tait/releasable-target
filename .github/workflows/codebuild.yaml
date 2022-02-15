@@ -40,10 +40,10 @@ jobs:
         uses: actions/upload-artifact@v2.2.3
         with:
           name: unittest-reports
-          path: build/test-reports/*
+          path: build/*
       - name: Publish Test Report
         if: success() || failure()
         uses: mikepenz/action-junit-report@v2
         with:
           check_name: Postgres Behave Tests
-          report_paths: build/test-reports/unittest.xml
+          report_paths: build/unittest.xml

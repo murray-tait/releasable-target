@@ -16,8 +16,8 @@ GIT_REF_TYPE ?= branch
 
 S3_OBJECT_LOCATION = s3://${S3_BUILD_BUCKET}/builds/${ARTIFACT_NAME}/objects/${SHA1_START}/${SHA1_END}
 S3_REF_LOCATION = s3://${S3_BUILD_BUCKET}/builds/${ARTIFACT_NAME}/${GIT_REF}
-S3_REPORT_OBJECT_LOCATION = s3://${S3_REPORT_BUCKET}/builds/${ARTIFACT_NAME}/objects/${SHA1_START}/${SHA1_END}
-S3_REPORT_REF_LOCATION = s3://${S3_REPORT_BUCKET}/builds/${ARTIFACT_NAME}/${GIT_REF}
+S3_REPORTS_OBJECT_LOCATION = s3://${S3_REPORT_BUCKET}/reports/${ARTIFACT_NAME}/objects/${SHA1_START}/${SHA1_END}
+S3_REPORTS_REF_LOCATION = s3://${S3_REPORT_BUCKET}/reports/${ARTIFACT_NAME}/${GIT_REF}
 
 CODEBUILD_UUID := $(shell cat /proc/sys/kernel/random/uuid)
 CODEBUILD_BUILD_ID ?= uk-nhs-devspineservices-pdspoc:${CODEBUILD_UUID}
@@ -98,6 +98,7 @@ upload-builds: build-all
 
 upload-reports: 
 	@if [ "${GIT_DIRTY}" = "false" ]; then \
+<<<<<<< Updated upstream
 		aws s3 cp --no-progress ${build_dir}test-reports/unittest.xml ${S3_REPORT_OBJECT_LOCATION}/unittest.xml; \
         aws s3 cp --no-progress --recursive --include "*" ${build_dir}/test-reports/html/ ${S3_REPORT_OBJECT_LOCATION}/html; \
 	fi
@@ -105,6 +106,15 @@ upload-reports:
 	if [ "${GIT_REF_TYPE}" = "branch" ] || [ "${GIT_DIRTY}" = "false" ]; then \
 		aws s3 cp --no-progress ${build_dir}/test-reports/unittest.xml ${S3_REPORT_REF_LOCATION}/unittest.xml; \
         aws s3 cp --no-progress --recursive --include "*" ${build_dir}/test-reports/html/ ${S3_REPORT_REF_LOCATION}/html; \
+=======
+		aws s3 cp --no-progress ${build_dir}test-reports/unittest.xml ${S3_REPORTS_OBJECT_LOCATION}/unittest.xml; \
+        aws s3 cp --no-progress --recursive --include "*" ${build_dir}test-reports/html/ ${REPORTS_S3_OBJECT_LOCATION}/html; \
+	fi
+
+	if [ "${GIT_REF_TYPE}" = "branch" ] || [ "${GIT_DIRTY}" = "false" ]; then \
+		aws s3 cp --no-progress ${build_dir}/test-reports/unittest.xml ${S3_REPORTS_REF_LOCATION}/unittest.xml; \
+        aws s3 cp --no-progress --recursive --include "*" ${build_dir}/test-reports/html/ ${S3_REPORTS_REF_LOCATION}/html; \
+>>>>>>> Stashed changes
 	fi
 
 ${CDK_STACK}:

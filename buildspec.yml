@@ -17,7 +17,6 @@ phases:
      - make src/main/cdk/.venv
      - export PATH=${PATH}:$(pwd)/node_modules/.bin
      - . src/main/cdk/.venv/bin/activate
-     - apt-get install awscliv2 -y
   build:
     commands:
      - make clean

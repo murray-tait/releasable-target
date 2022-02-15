@@ -30,8 +30,8 @@ jobs:
       - name: Retrieve test reports from CodeBuild
         if: success() || failure()
         run: |
-          SHA1_START=${{ github.sha }} | cut -c -2
-          SHA1_END=${{ github.sha }} | cut -c 3-
+          export SHA1_START=${{ github.sha }} | cut -c -2
+          export SHA1_END=${{ github.sha }} | cut -c 3-
           mkdir -p build
           aws s3 cp s3://org.murraytait.experiment.build.reports/reports/releasable/objects/${SHA1_START}/${SHA1_END} build/
       - name: Archive test reports

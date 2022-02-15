@@ -17,7 +17,7 @@ phases:
      - make src/main/cdk/.venv
      - export PATH=${PATH}:$(pwd)/node_modules/.bin
      - . src/main/cdk/.venv/bin/activate
-     - make install
+     - make install-awscli
   build:
     commands:
      - make clean

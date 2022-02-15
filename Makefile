@@ -104,7 +104,7 @@ upload-reports:
 
 	if [ "${GIT_REF_TYPE}" = "branch" ] || [ "${GIT_DIRTY}" = "false" ]; then \
 		aws s3 cp --no-progress ${build_dir}/test-reports/unittest.xml ${S3_REPORTS_REF_LOCATION}/unittest.xml; \
-        aws s3 cp --no-progress --recursive --include "*" ${build_dir}/test-reports/html/ ${S3_REPORTS_REF_LOCATION}/html; \
+        aws s3 cp --no-progress --recursive --include "*" ${build_dir}/test-reports/html ${S3_REPORTS_REF_LOCATION}/html; \
 	fi
 
 ${CDK_STACK}:

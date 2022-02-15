@@ -22,7 +22,7 @@ S3_REPORTS_REF_LOCATION = s3://${S3_REPORT_BUCKET}/reports/${ARTIFACT_NAME}/${GI
 CODEBUILD_UUID := $(shell cat /proc/sys/kernel/random/uuid)
 CODEBUILD_BUILD_ID ?= uk-nhs-devspineservices-pdspoc:${CODEBUILD_UUID}
 
-.PHONY: poetry-activate clean install upload tf-* upload-builds build-all unittest
+.PHONY: poetry-activate clean install upload tf-* upload-builds build-all unittest install-awscli
 
 clean:
 	rm -rf ${build_dir}
@@ -45,7 +45,12 @@ src/main/cdk/.venv: ${CDK_VENV_BASE}/poetry.lock ${CDK_VENV_BASE}/pyproject.toml
 	poetry install
 	touch src/main/cdk/.venv
 
-install: node_modules/.bin/cdktf ${CDK_VENV_BASE}/.venv
+install-awscli:
+	curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+	unzip awscliv2.zip	
+	sudo ./aws/install
+
+install: node_modules/.bin/cdktf ${CDK_VENV_BASE}/.venv install-awscli
 
 poetry-activate: src/main/cdk/.venv
 	. src/main/cdk/.venv/bin/activate

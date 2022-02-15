@@ -103,6 +103,7 @@ upload-builds: build-all
 
 upload-reports: 
 	git status
+	git diff
 	aws --version
 	@if [ "${GIT_DIRTY}" = "false" ]; then \
 		aws s3 cp --no-progress ${build_dir}/test-reports/unittest.xml ${S3_REPORTS_OBJECT_LOCATION}/unittest.xml; \

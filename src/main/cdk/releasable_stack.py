@@ -17,7 +17,7 @@ from murraytait_cdktf.provider_factory import ProviderFactory
 from murraytait_cdktf.accounts import Accounts
 from murraytait_cdktf.config import Config
 
-from .env import get_environment
+from env import get_environment
 
 class ReleasableStack(TerraformStack):
 
@@ -29,12 +29,12 @@ class ReleasableStack(TerraformStack):
         self.environment = get_environment(scope, ns)
 
         config = Config(scope, ns)
-        self.accounts = Accounts(self.environment, config.accounts_profile)
-        self.shared = Shared(config, self.accounts, self.environment)
+        accounts = Accounts(self.environment, config.accounts_profile)
+        shared = Shared(config, accounts, self.environment)
 
-        self._create_backend(config)
+        self._create_backend(config, accounts)
         self._provider_factory = ProviderFactory(
-            self, config, self.shared.aws_role_arn, self.shared.aws_profile)
+            self, config, shared.aws_role_arn, shared.aws_profile)
 
         self._provider_factory.build("eu-west-1")
 
@@ -44,13 +44,13 @@ class ReleasableStack(TerraformStack):
         aws_wafregional_web_acl_main = DataAwsWafregionalWebAcl(
             self,
             id="main",
-            name=self.shared.web_acl_name
+            name=shared.web_acl_name
         )
 
         route_53_zone = DataAwsRoute53Zone(
             self,
             id="environment",
-            name=self.shared.environment_domain_name
+            name=shared.environment_domain_name
         )
 
         lambda_service_role = IamRole(
@@ -68,7 +68,7 @@ class ReleasableStack(TerraformStack):
             handler="bootstrap",
             timeout=30,
             role=lambda_service_role.arn,
-            s3_bucket=self.shared.destination_builds_bucket_name,
+            s3_bucket=shared.destination_builds_bucket_name,
             s3_key=f'builds/{config.app_name}/refs/branch/{self.environment}/lambda.zip'
         )
 
@@ -79,16 +79,16 @@ class ReleasableStack(TerraformStack):
             # source="../../../../terraform/modules/lambda_pipeline",
             variables={
                 "application_name": config.app_name,
-                "destination_builds_bucket_name": self.shared.destination_builds_bucket_name,
+                "destination_builds_bucket_name": shared.destination_builds_bucket_name,
                 "function_names": [lambda_function.function_name],
                 "function_arns": [lambda_function.arn],
-                "aws_sns_topic_env_build_notification_name": self.shared.aws_sns_topic_env_build_notification_name,
-                "aws_account_id": self.accounts.aws_account_id
+                "aws_sns_topic_env_build_notification_name": shared.aws_sns_topic_env_build_notification_name,
+                "aws_account_id": accounts.aws_account_id
             }
         )
 
         acm_cert = environment_certificate(
-            self, self.aws_global_provider, self.shared.environment_domain_name
+            self, self.aws_global_provider, shared.environment_domain_name
         )
 
         api_gateway_module = TerraformHclModule(
@@ -98,7 +98,7 @@ class ReleasableStack(TerraformStack):
             # source="../../../../terraform/modules/api_gateway",
             variables={
                 "aws_region": config.aws_region,
-                "fqdn": self.shared.fqdn,
+                "fqdn": shared.fqdn,
                 "zone_id": route_53_zone.id,
                 "web_acl_id": aws_wafregional_web_acl_main.id,
                 "certificate_arn": acm_cert.arn,
@@ -117,20 +117,20 @@ class ReleasableStack(TerraformStack):
             id="cloudfront_pipeline",
             source="git@github.com:deathtumble/terraform_modules.git//modules/cloudfront_pipeline?ref=v0.1.42",
             variables={
-                "fqdn": f'web{self.shared.fqdn}',
-                "destination_builds_bucket_name": self.shared.destination_builds_bucket_name,
+                "fqdn": f'web{shared.fqdn}',
+                "destination_builds_bucket_name": shared.destination_builds_bucket_name,
                 "application_name": "releasable",
                 "branch_name": self.environment,
-                "artifacts_bucket_name": self.shared.artifacts_bucket_name,
+                "artifacts_bucket_name": shared.artifacts_bucket_name,
                 "build_artifact_key": build_artifact_key
             }
         )
 
         web_config = {
-            "REACT_APP_API_ENDPOINT": f"https://releasable.{self.shared.environment_domain_name}/query",
-            "REACT_APP_PRIMARY_SLDN": self.shared.environment_domain_name,
-            "REACT_APP_API_SLDN": self.shared.environment_domain_name,
-            "REACT_APP_SSO_COOKIE_SLDN": self.shared.environment_domain_name,
+            "REACT_APP_API_ENDPOINT": f"https://releasable.{shared.environment_domain_name}/query",
+            "REACT_APP_PRIMARY_SLDN": shared.environment_domain_name,
+            "REACT_APP_API_SLDN": shared.environment_domain_name,
+            "REACT_APP_SSO_COOKIE_SLDN": shared.environment_domain_name,
             "REACT_APP_AWS_COGNITO_REGION": config.aws_region,
             "REACT_APP_AWS_COGNITO_IDENTITY_POOL_REGION": config.aws_region,
             "REACT_APP_AWS_COGNITO_AUTH_FLOW_TYPE": "USER_SRP_AUTH",
@@ -144,10 +144,10 @@ class ReleasableStack(TerraformStack):
             id="web",
             source="git@github.com:deathtumble/terraform_modules.git//modules/web?ref=v0.4.1",
             variables={
-                "aws_profile": self.shared.aws_profile,
-                "fqdn": f'web{self.shared.fqdn}',
-                "fqdn_no_app": self.shared.environment_domain_name,
-                "web_acl_name": self.shared.web_acl_name,
+                "aws_profile": shared.aws_profile,
+                "fqdn": f'web{shared.fqdn}',
+                "fqdn_no_app": shared.environment_domain_name,
+                "web_acl_name": shared.web_acl_name,
                 "application_name": "releasable",
                 "environment_config": web_config
             }
@@ -181,7 +181,7 @@ class ReleasableStack(TerraformStack):
                                 "logs:PutLogEvents",
                                 "logs:CreateLogStream"
                             ],
-                            "Resource": f'arn:aws:logs:{config.aws_region}:{self.accounts.aws_account_id}:log-group:/aws/lambda/{config.app_name}:*',
+                            "Resource": f'arn:aws:logs:{config.aws_region}:{accounts.aws_account_id}:log-group:/aws/lambda/{config.app_name}:*',
                             "Effect":"Allow"
                         },
                         {
@@ -211,11 +211,11 @@ class ReleasableStack(TerraformStack):
             retention_in_days=14
         )
 
-    def _create_backend(self, config):
+    def _create_backend(self, config, accounts):
         bucket = config.tldn + '.' + \
-            self.accounts.terraform_state_account_name + '.terraform'
+            accounts.terraform_state_account_name + '.terraform'
         dynamo_table = config.tldn + '.' + \
-            self.accounts.terraform_state_account_name + '.terraform.lock'
+            accounts.terraform_state_account_name + '.terraform.lock'
 
         backend_args = {
             'region': "eu-west-1",
@@ -227,9 +227,9 @@ class ReleasableStack(TerraformStack):
 
         if config.use_role_arn:
             backend_args["role_arn"] = 'arn:aws:iam::' + \
-                self.accounts.terraform_state_account_id + ':role/TerraformStateAccess'
+                accounts.terraform_state_account_id + ':role/TerraformStateAccess'
         else:
-            backend_args['profile'] = self.accounts.terraform_state_account_id + \
+            backend_args['profile'] = accounts.terraform_state_account_id + \
                 "_TerraformStateAccess"
 
         S3Backend(self, **backend_args)

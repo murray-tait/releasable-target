@@ -92,7 +92,7 @@ class ReleasableStack(TerraformStack):
                 self, self.aws_global_provider, self.shared.environment_domain_name
             )
 
-            TerraformHclModule(
+            api_gateway_module = TerraformHclModule(
                 self,
                 id="api_gateway",
                 source="git@github.com:deathtumble/terraform_modules.git//modules/api_gateway?ref=v0.4.2",
@@ -157,6 +157,8 @@ class ReleasableStack(TerraformStack):
             DataAwsSecretsmanagerSecretVersion(
                 self, id="repo_token", secret_id="repo_token")
 
+            api_gateway_id = api_gateway_module.get_string("api_id")
+
             LambdaPermission(
                 self,
                 id="lambda_permission_api_gateway",
@@ -164,7 +166,7 @@ class ReleasableStack(TerraformStack):
                 function_name="releasable",
                 principal="apigateway.amazonaws.com",
                 action="lambda:InvokeFunction",
-                source_arn="arn:aws:execute-api:eu-west-1:481652375433:y6wsd502lh/*/*/*"
+                source_arn=f"arn:aws:execute-api:eu-west-1:481652375433:{api_gateway_id}/*/*/*"
             )
 
             lambda_log_access = IamPolicy(
@@ -236,11 +238,8 @@ class ReleasableStack(TerraformStack):
     @staticmethod
     def _get_environment(scope: Construct, ns: str):
         environment = None
-        try:
-            with open(scope.outdir + '/stacks/' + ns + '/.terraform/environment', 'r') as reader:
-                environment = reader.read()
-        except IOError:
-            pass
+        with open(scope.outdir + '/stacks/' + ns + '/.terraform/environment', 'r') as reader:
+            environment = reader.read().split()[0]
         return environment
 
 

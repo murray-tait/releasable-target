@@ -70,7 +70,7 @@ ${build_dir}/lambda.zip: src/main/bash/*
 unittest: src/main/cdk/.venv
 	cd ${CDK_VENV_BASE} && \
 	. .venv/bin/activate && \
-	GIT_REF=${GIT_REF} poetry run pytest --junitxml=../../../${build_dir}/test-reports/unittest.xml --html=../../../${build_dir}/test-reports/html/unittest.html
+	GIT_REF=${GIT_REF} python -m pytest --junitxml=../../../${build_dir}/test-reports/unittest.xml --html=../../../${build_dir}/test-reports/html/unittest.html
 
 ${build_dir}/terraform.zip: ${CDK_SRC}/*
 	mkdir -p ${build_dir}/terraform

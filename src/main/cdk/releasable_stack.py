@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import json
 import os
 
@@ -18,6 +17,7 @@ from murraytait_cdktf.provider_factory import ProviderFactory
 from murraytait_cdktf.accounts import Accounts
 from murraytait_cdktf.config import Config
 
+from .env import get_environment
 
 class ReleasableStack(TerraformStack):
 
@@ -26,7 +26,7 @@ class ReleasableStack(TerraformStack):
         super().__init__(scope, ns)
         self._ns = ns
 
-        self.environment = self._get_environment(scope, ns)
+        self.environment = get_environment(scope, ns)
 
         if self.environment != "default":
             config = Config(scope, ns)
@@ -234,13 +234,6 @@ class ReleasableStack(TerraformStack):
                 "_TerraformStateAccess"
 
         S3Backend(self, **backend_args)
-
-    @staticmethod
-    def _get_environment(scope: Construct, ns: str):
-        environment = None
-        with open(scope.outdir + '/stacks/' + ns + '/.terraform/environment', 'r') as reader:
-            environment = reader.read().split()[0]
-        return environment
 
 
 def environment_certificate(scope, provider, environment_domain_name):

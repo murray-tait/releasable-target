@@ -6,11 +6,11 @@ from jsii._kernel.providers.process import InvokeResponse
 from jsii._kernel.providers.process import CreateRequest
 import jsii
 
-
+@patch("cdk.releasable_stack.get_environment")
 @patch("cdk.releasable_stack.Accounts")
 @patch("cdk.releasable_stack.Config")
 # @patch("jsii._kernel.providers.process.ProcessProvider.invoke")
-def test_happy_path(Config, Accounts):
+def test_happy_path(Config, Accounts, get_environment):
     # Arrange
     
     mock_config = Config.return_value
@@ -22,7 +22,7 @@ def test_happy_path(Config, Accounts):
     type(mock_config).app_name = PropertyMock(return_value="app_name")
     type(mock_config).aws_region = PropertyMock(return_value="eu-west-1")
     type(mock_config).use_role_arn = PropertyMock(return_value=False)
-    mock_config._get_environment.return_value = "env"
+    get_environment.return_value = "env"
 
     mock_accounts = Accounts.return_value
     type(mock_accounts).terraform_state_account_name = PropertyMock(

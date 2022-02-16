@@ -1,14 +1,12 @@
 import json
-import os
 
 from cdktf_cdktf_provider_aws.lambdafunction import LambdaPermission
 from cdktf_cdktf_provider_aws.secretsmanager import DataAwsSecretsmanagerSecretVersion
 from cdktf_cdktf_provider_aws.lambdafunction import LambdaFunction
 from cdktf_cdktf_provider_aws.iam import IamRole, IamRolePolicyAttachment, IamPolicy
-from cdktf_cdktf_provider_aws.acm import DataAwsAcmCertificate
 from cdktf_cdktf_provider_aws.route53 import DataAwsRoute53Zone
 from cdktf_cdktf_provider_aws.wafregional import DataAwsWafregionalWebAcl
-from cdktf import TerraformHclModule, TerraformLocal, S3Backend, TerraformStack
+from cdktf import TerraformHclModule, TerraformLocal, TerraformStack
 from cdktf_cdktf_provider_aws.cloudwatch import CloudwatchLogGroup
 from constructs import Construct
 
@@ -17,10 +15,10 @@ from murraytait_cdktf.provider_factory import ProviderFactory
 from murraytait_cdktf.accounts import Accounts
 from murraytait_cdktf.config import Config
 
-from env import get_environment
+from env import get_environment, file, environment_certificate, create_backend
+
 
 class ReleasableStack(TerraformStack):
-
     def __init__(self, scope: Construct, ns: str):
 
         super().__init__(scope, ns)
@@ -33,32 +31,30 @@ class ReleasableStack(TerraformStack):
         app_name = "releasable"
         aws_region = "eu-west-1"
 
-        self._create_backend(config, accounts)
+        create_backend(self, config, accounts, ns)
 
         provider_factory = ProviderFactory(
-            self, config, shared.aws_role_arn, shared.aws_profile)
+            self, config, shared.aws_role_arn, shared.aws_profile
+        )
         provider_factory.build(aws_region)
 
         self.aws_global_provider = provider_factory.build(
-            "us-east-1", "global_aws", "global")
+            "us-east-1", "global_aws", "global"
+        )
 
         aws_wafregional_web_acl_main = DataAwsWafregionalWebAcl(
-            self,
-            id="main",
-            name=shared.web_acl_name
+            self, id="main", name=shared.web_acl_name
         )
 
         route_53_zone = DataAwsRoute53Zone(
-            self,
-            id="environment",
-            name=shared.environment_domain_name
+            self, id="environment", name=shared.environment_domain_name
         )
 
         lambda_service_role = IamRole(
             self,
             id="lambda_service_role",
-            name=f'{app_name}-lambda-executeRole',
-            assume_role_policy=file("policies/lambda_service_role.json")
+            name=f"{app_name}-lambda-executeRole",
+            assume_role_policy=file("policies/lambda_service_role.json"),
         )
 
         lambda_function = LambdaFunction(
@@ -70,7 +66,7 @@ class ReleasableStack(TerraformStack):
             timeout=30,
             role=lambda_service_role.arn,
             s3_bucket=shared.destination_builds_bucket_name,
-            s3_key=f'builds/{app_name}/refs/branch/{self.environment}/lambda.zip'
+            s3_key=f"builds/{app_name}/refs/branch/{self.environment}/lambda.zip",
         )
 
         TerraformHclModule(
@@ -84,8 +80,8 @@ class ReleasableStack(TerraformStack):
                 "function_names": [lambda_function.function_name],
                 "function_arns": [lambda_function.arn],
                 "aws_sns_topic_env_build_notification_name": shared.aws_sns_topic_env_build_notification_name,
-                "aws_account_id": accounts.aws_account_id
-            }
+                "aws_account_id": accounts.aws_account_id,
+            },
         )
 
         acm_cert = environment_certificate(
@@ -103,14 +99,19 @@ class ReleasableStack(TerraformStack):
                 "zone_id": route_53_zone.id,
                 "web_acl_id": aws_wafregional_web_acl_main.id,
                 "certificate_arn": acm_cert.arn,
-                "lambda_invoke_arn": lambda_function.invoke_arn
-            }
+                "lambda_invoke_arn": lambda_function.invoke_arn,
+            },
         )
 
-        terraform_build_artifact_key = f'builds/{app_name}/refs/branch/{self.environment}/terraform.zip'
-        TerraformLocal(self, "terraform_build_artifact_key",
-                        terraform_build_artifact_key)
-        build_artifact_key = f'builds/{app_name}/refs/branch/{self.environment}/cloudfront.zip'
+        terraform_build_artifact_key = (
+            f"builds/{app_name}/refs/branch/{self.environment}/terraform.zip"
+        )
+        TerraformLocal(
+            self, "terraform_build_artifact_key", terraform_build_artifact_key
+        )
+        build_artifact_key = (
+            f"builds/{app_name}/refs/branch/{self.environment}/cloudfront.zip"
+        )
         TerraformLocal(self, "build_artifact_key", build_artifact_key)
 
         TerraformHclModule(
@@ -118,13 +119,13 @@ class ReleasableStack(TerraformStack):
             id="cloudfront_pipeline",
             source="git@github.com:deathtumble/terraform_modules.git//modules/cloudfront_pipeline?ref=v0.1.42",
             variables={
-                "fqdn": f'web{shared.fqdn}',
+                "fqdn": f"web{shared.fqdn}",
                 "destination_builds_bucket_name": shared.destination_builds_bucket_name,
                 "application_name": "releasable",
                 "branch_name": self.environment,
                 "artifacts_bucket_name": shared.artifacts_bucket_name,
-                "build_artifact_key": build_artifact_key
-            }
+                "build_artifact_key": build_artifact_key,
+            },
         )
 
         web_config = {
@@ -146,16 +147,17 @@ class ReleasableStack(TerraformStack):
             source="git@github.com:deathtumble/terraform_modules.git//modules/web?ref=v0.4.1",
             variables={
                 "aws_profile": shared.aws_profile,
-                "fqdn": f'web{shared.fqdn}',
+                "fqdn": f"web{shared.fqdn}",
                 "fqdn_no_app": shared.environment_domain_name,
                 "web_acl_name": shared.web_acl_name,
                 "application_name": "releasable",
-                "environment_config": web_config
-            }
+                "environment_config": web_config,
+            },
         )
 
         DataAwsSecretsmanagerSecretVersion(
-            self, id="repo_token", secret_id="repo_token")
+            self, id="repo_token", secret_id="repo_token"
+        )
 
         api_gateway_id = api_gateway_module.get_string("api_id")
 
@@ -166,7 +168,7 @@ class ReleasableStack(TerraformStack):
             function_name="releasable",
             principal="apigateway.amazonaws.com",
             action="lambda:InvokeFunction",
-            source_arn=f"arn:aws:execute-api:eu-west-1:481652375433:{api_gateway_id}/*/*/*"
+            source_arn=f"arn:aws:execute-api:eu-west-1:481652375433:{api_gateway_id}/*/*/*",
         )
 
         lambda_log_access = IamPolicy(
@@ -178,80 +180,33 @@ class ReleasableStack(TerraformStack):
                     "Version": "2012-10-17",
                     "Statement": [
                         {
-                            "Action": [
-                                "logs:PutLogEvents",
-                                "logs:CreateLogStream"
-                            ],
-                            "Resource": f'arn:aws:logs:{aws_region}:{accounts.aws_account_id}:log-group:/aws/lambda/{app_name}:*',
-                            "Effect":"Allow"
+                            "Action": ["logs:PutLogEvents", "logs:CreateLogStream"],
+                            "Resource": f"arn:aws:logs:{aws_region}:{accounts.aws_account_id}:log-group:/aws/lambda/{app_name}:*",
+                            "Effect": "Allow",
                         },
                         {
                             "Action": [
                                 "xray:PutTraceSegments",
-                                "xray:PutTelemetryRecords"
+                                "xray:PutTelemetryRecords",
                             ],
                             "Resource": "*",
-                            "Effect": "Allow"
-                        }
-                    ]
+                            "Effect": "Allow",
+                        },
+                    ],
                 }
-            )
+            ),
         )
 
         IamRolePolicyAttachment(
             self,
             id="lambda_log_access_role_policy_attachement",
             role=lambda_service_role.name,
-            policy_arn=lambda_log_access.arn
+            policy_arn=lambda_log_access.arn,
         )
 
         CloudwatchLogGroup(
             self,
             id="lambda_log_group",
-            name=f'/aws/lambda/{lambda_function.function_name}',
-            retention_in_days=14
+            name=f"/aws/lambda/{lambda_function.function_name}",
+            retention_in_days=14,
         )
-
-    def _create_backend(self, config, accounts):
-        bucket = config.tldn + '.' + \
-            accounts.terraform_state_account_name + '.terraform'
-        dynamo_table = config.tldn + '.' + \
-            accounts.terraform_state_account_name + '.terraform.lock'
-
-        backend_args = {
-            'region': "eu-west-1",
-            'key': self._ns + '/terraform.tfstate',
-            'bucket': bucket,
-            'dynamodb_table': dynamo_table,
-            'acl': "bucket-owner-full-control"
-        }
-
-        if config.use_role_arn:
-            backend_args["role_arn"] = 'arn:aws:iam::' + \
-                accounts.terraform_state_account_id + ':role/TerraformStateAccess'
-        else:
-            backend_args['profile'] = accounts.terraform_state_account_id + \
-                "_TerraformStateAccess"
-
-        S3Backend(self, **backend_args)
-
-
-def environment_certificate(scope, provider, environment_domain_name):
-    acm_cert = DataAwsAcmCertificate(
-        scope,
-        id="main_cert",
-        domain=f'*.{environment_domain_name}',
-        types=["AMAZON_ISSUED"],
-        statuses=["ISSUED"],
-        provider=provider,
-        most_recent=True
-    )
-
-    return acm_cert
-
-
-def file(file_name: str) -> str:
-    package_directory = os.path.dirname(os.path.abspath(__file__))
-    full_file_name = os.path.join(package_directory, file_name)
-    f = open(full_file_name, "r")
-    return f.read()

@@ -22,7 +22,9 @@ S3_REPORTS_REF_LOCATION = s3://${S3_REPORT_BUCKET}/reports/${ARTIFACT_NAME}/${GI
 CODEBUILD_UUID := $(shell cat /proc/sys/kernel/random/uuid)
 CODEBUILD_BUILD_ID ?= uk-nhs-devspineservices-pdspoc:${CODEBUILD_UUID}
 
-.PHONY: poetry-activate clean install upload tf-* upload-builds build-all unittest install-awscli
+.PHONY: poetry-activate clean install upload default all upload-builds build-all tf-* unittest install-awscli
+
+default: all
 
 clean:
 	rm -rf ${build_dir}
@@ -72,7 +74,7 @@ unittest: src/main/cdk/.venv
 	. .venv/bin/activate && \
 	GIT_REF=${GIT_REF} python -m pytest --junitxml=../../../${build_dir}/test-reports/unittest.xml --html=../../../${build_dir}/test-reports/html/unittest.html
 
-${build_dir}/terraform.zip: ${CDK_SRC}/*
+${build_dir}/terraform.zip: ${CDK_SRC}/* ${build_dir}
 	mkdir -p ${build_dir}/terraform
 	rm -rf ${build_dir}/terraform/*
 	mkdir -p ${build_dir}/terraform/${CDK_SRC}
@@ -104,9 +106,6 @@ upload-builds: build-all
 	fi
 
 upload-reports: 
-	git status
-	git diff
-	aws --version
 	@if [ "${GIT_DIRTY}" = "false" ]; then \
 		aws s3 cp --no-progress ${build_dir}/test-reports/unittest.xml ${S3_REPORTS_OBJECT_LOCATION}/unittest.xml; \
         aws s3 cp --no-progress ${build_dir}/test-reports/html/ ${S3_REPORTS_OBJECT_LOCATION}/html/ --recursive ; \
@@ -121,24 +120,23 @@ ${CDK_STACK}/.terraform:
 	mkdir -p ${CDK_STACK}/.terraform
 	echo Default > ${CDK_STACK}/.terraform/environment	
 
-tf-workspace-%: ${CDK_STACK}/.terraform
+tf-workspace-%: ${CDK_STACK}/.terraform node_modules/.bin/cdktf
 	echo $* > ${CDK_STACK}/.terraform/environment
 	cd ${CDK_STACK} && terraform init
 	. ${CDK_VENV_BASE}/.venv/bin/activate
-	cd ${CDK_SRC} && \
-	${NODE_PATH}/cdktf synth 
+	cd ${CDK_SRC} && ${NODE_PATH}/cdktf synth 
 	cd ${CDK_STACK} && terraform workspace select $*
 
-tf-get: poetry-activate
+tf-get: poetry-activate node_modules/.bin/cdktf
 	cd ${CDK_SRC} && ${NODE_PATH}/cdktf get
 
-tf-synth: poetry-activate ${NODE_PATH}/cdktf
+tf-synth: poetry-activate node_modules/.bin/cdktf ${build_dir}
 	cd ${CDK_SRC} && ${NODE_PATH}/cdktf synth
 
-tf-diff: poetry-activate
+tf-diff: poetry-activate node_modules/.bin/cdktf
 	cd ${CDK_SRC} && ${NODE_PATH}/cdktf diff
 
-tf-deploy: poetry-activate
+tf-deploy: poetry-activate tf-synth
 	cd ${CDK_SRC} && ${NODE_PATH}/cdktf deploy
 
 tf-plan: poetry-activate tf-synth
@@ -146,3 +144,8 @@ tf-plan: poetry-activate tf-synth
 
 tf-apply: poetry-activate tf-synth
 	cd ${CDK_STACK} && terraform apply --auto-approve
+
+graphmake: ${build_dir}
+	make -Bnd | make2graph | dot -Tpng -o build/out.png
+
+all: tf-plan upload-builds

@@ -45,5 +45,5 @@ jobs:
         if: success() || failure()
         uses: mikepenz/action-junit-report@v2
         with:
-          check_name: Postgres Behave Tests
+          check_name: Unit Tests
           report_paths: build/unittest.xml

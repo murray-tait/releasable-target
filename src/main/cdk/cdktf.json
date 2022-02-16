@@ -1,10 +1,9 @@
 {
   "language": "python",
   "app": "poetry run python main.py",
-  "projectId": "8ed42c45-62ba-4a8b-8c79-ab971750afba",
   "output": "../../../target/cdktf",
   "codeMakerOutput": "imports",
-  "terraformProviders": ["hashicorp/aws@~> 3.42", "hashicorp/archive@~> 2.2"],
+  "terraformProviders": [],
   "terraformModules": [],
   "context": {
     "excludeStackIdFromLogicalIds": "true",
@@ -15,5 +14,6 @@
     "top_level_domain_name": "org.murraytait.experiment",
     "project_name": "experiment",
     "aws_region": "eu-west-1"
-  }
+  },
+  "projectId": "8ed42c45-62ba-4a8b-8c79-ab971750afba"
 }

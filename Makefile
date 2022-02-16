@@ -117,12 +117,12 @@ upload-reports:
         aws s3 cp --no-progress ${build_dir}/test-reports/html/ ${S3_REPORTS_REF_LOCATION}/html/ --recursive ; \
 	fi
 
-${CDK_STACK}:
-	mkdir -p ${CDK_STACK}
+${CDK_STACK}/.terraform:
+	mkdir -p ${CDK_STACK}/.terraform
 	echo Default > ${CDK_STACK}/.terraform/environment	
 
-tf-workspace-%: ${CDK_STACK}
-	echo $* > ${CDK_STACK}/environment
+tf-workspace-%: ${CDK_STACK}/.terraform
+	echo $* > ${CDK_STACK}/.terraform/environment
 	cd ${CDK_STACK} && terraform init
 	. ${CDK_VENV_BASE}/.venv/bin/activate
 	cd ${CDK_SRC} && \

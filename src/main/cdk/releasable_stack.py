@@ -25,20 +25,21 @@ class ReleasableStack(TerraformStack):
 
         super().__init__(scope, ns)
         self._ns = ns
-
         self.environment = get_environment(scope, ns)
 
         config = Config(scope, ns)
         accounts = Accounts(self.environment, config.accounts_profile)
         shared = Shared(config, accounts, self.environment)
+        app_name = "releasable"
+        aws_region = "eu-west-1"
 
         self._create_backend(config, accounts)
-        self._provider_factory = ProviderFactory(
+
+        provider_factory = ProviderFactory(
             self, config, shared.aws_role_arn, shared.aws_profile)
+        provider_factory.build(aws_region)
 
-        self._provider_factory.build("eu-west-1")
-
-        self.aws_global_provider = self._provider_factory.build(
+        self.aws_global_provider = provider_factory.build(
             "us-east-1", "global_aws", "global")
 
         aws_wafregional_web_acl_main = DataAwsWafregionalWebAcl(
@@ -56,20 +57,20 @@ class ReleasableStack(TerraformStack):
         lambda_service_role = IamRole(
             self,
             id="lambda_service_role",
-            name=f'{config.app_name}-lambda-executeRole',
+            name=f'{app_name}-lambda-executeRole',
             assume_role_policy=file("policies/lambda_service_role.json")
         )
 
         lambda_function = LambdaFunction(
             scope=self,
             id="lambda",
-            function_name=config.app_name,
+            function_name=app_name,
             runtime="provided",
             handler="bootstrap",
             timeout=30,
             role=lambda_service_role.arn,
             s3_bucket=shared.destination_builds_bucket_name,
-            s3_key=f'builds/{config.app_name}/refs/branch/{self.environment}/lambda.zip'
+            s3_key=f'builds/{app_name}/refs/branch/{self.environment}/lambda.zip'
         )
 
         TerraformHclModule(
@@ -78,7 +79,7 @@ class ReleasableStack(TerraformStack):
             source="git@github.com:deathtumble/terraform_modules.git//modules/lambda_pipeline?ref=v0.4.2",
             # source="../../../../terraform/modules/lambda_pipeline",
             variables={
-                "application_name": config.app_name,
+                "application_name": app_name,
                 "destination_builds_bucket_name": shared.destination_builds_bucket_name,
                 "function_names": [lambda_function.function_name],
                 "function_arns": [lambda_function.arn],
@@ -97,7 +98,7 @@ class ReleasableStack(TerraformStack):
             source="git@github.com:deathtumble/terraform_modules.git//modules/api_gateway?ref=v0.4.2",
             # source="../../../../terraform/modules/api_gateway",
             variables={
-                "aws_region": config.aws_region,
+                "aws_region": aws_region,
                 "fqdn": shared.fqdn,
                 "zone_id": route_53_zone.id,
                 "web_acl_id": aws_wafregional_web_acl_main.id,
@@ -106,10 +107,10 @@ class ReleasableStack(TerraformStack):
             }
         )
 
-        terraform_build_artifact_key = f'builds/{config.app_name}/refs/branch/{self.environment}/terraform.zip'
+        terraform_build_artifact_key = f'builds/{app_name}/refs/branch/{self.environment}/terraform.zip'
         TerraformLocal(self, "terraform_build_artifact_key",
                         terraform_build_artifact_key)
-        build_artifact_key = f'builds/{config.app_name}/refs/branch/{self.environment}/cloudfront.zip'
+        build_artifact_key = f'builds/{app_name}/refs/branch/{self.environment}/cloudfront.zip'
         TerraformLocal(self, "build_artifact_key", build_artifact_key)
 
         TerraformHclModule(
@@ -131,8 +132,8 @@ class ReleasableStack(TerraformStack):
             "REACT_APP_PRIMARY_SLDN": shared.environment_domain_name,
             "REACT_APP_API_SLDN": shared.environment_domain_name,
             "REACT_APP_SSO_COOKIE_SLDN": shared.environment_domain_name,
-            "REACT_APP_AWS_COGNITO_REGION": config.aws_region,
-            "REACT_APP_AWS_COGNITO_IDENTITY_POOL_REGION": config.aws_region,
+            "REACT_APP_AWS_COGNITO_REGION": aws_region,
+            "REACT_APP_AWS_COGNITO_IDENTITY_POOL_REGION": aws_region,
             "REACT_APP_AWS_COGNITO_AUTH_FLOW_TYPE": "USER_SRP_AUTH",
             "REACT_APP_AWS_COGNITO_COOKIE_EXPIRY_MINS": 55,
             "REACT_APP_AWS_COGNITO_COOKIE_SECURE": True,
@@ -181,7 +182,7 @@ class ReleasableStack(TerraformStack):
                                 "logs:PutLogEvents",
                                 "logs:CreateLogStream"
                             ],
-                            "Resource": f'arn:aws:logs:{config.aws_region}:{accounts.aws_account_id}:log-group:/aws/lambda/{config.app_name}:*',
+                            "Resource": f'arn:aws:logs:{aws_region}:{accounts.aws_account_id}:log-group:/aws/lambda/{app_name}:*',
                             "Effect":"Allow"
                         },
                         {

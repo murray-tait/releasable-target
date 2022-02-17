@@ -1,35 +1,11 @@
 import json
-from json import JSONEncoder
-from hashlib import sha1
-from sre_constants import SRE_FLAG_MULTILINE
-from venv import create
 
-from cdktf_cdktf_provider_aws.lambdafunction import LambdaPermission
-from cdktf_cdktf_provider_aws.secretsmanager import DataAwsSecretsmanagerSecretVersion
-from cdktf_cdktf_provider_aws.lambdafunction import LambdaFunction
+from cdktf_cdktf_provider_aws.lambdafunction import LambdaPermission, LambdaFunction
 from cdktf_cdktf_provider_aws.iam import IamRole, IamRolePolicyAttachment, IamPolicy
-from cdktf_cdktf_provider_aws.route53 import DataAwsRoute53Zone, Route53Record, Route53RecordAlias
-from cdktf_cdktf_provider_aws.wafregional import (
-    DataAwsWafregionalWebAcl,
-    WafregionalWebAclAssociation,
-)
+from cdktf_cdktf_provider_aws.route53 import DataAwsRoute53Zone
+from cdktf_cdktf_provider_aws.wafregional import DataAwsWafregionalWebAcl
 from cdktf import TerraformHclModule, TerraformLocal, TerraformStack, TerraformResourceLifecycle
 from cdktf_cdktf_provider_aws.cloudwatch import CloudwatchLogGroup
-from cdktf_cdktf_provider_aws.apigateway import (
-    ApiGatewayRestApi,
-    ApiGatewayRestApiEndpointConfiguration,
-    ApiGatewayDeployment,
-    ApiGatewayRestApiPolicy,
-    ApiGatewayStage,
-    ApiGatewayStageAccessLogSettings,
-    ApiGatewayBasePathMapping,
-    ApiGatewayMethod,
-    ApiGatewayMethodSettings,
-    ApiGatewayMethodSettingsSettings,
-    ApiGatewayResource,
-    ApiGatewayIntegration,
-    ApiGatewayDomainName,
-)
 from constructs import Construct
 
 from murraytait_cdktf.shared import Shared
@@ -37,7 +13,7 @@ from murraytait_cdktf.provider_factory import ProviderFactory
 from murraytait_cdktf.accounts import Accounts
 from murraytait_cdktf.config import Config
 
-from env import get_environment, file, environment_certificate, create_backend
+from env import get_environment, file, environment_certificate, create_backend, rest_api_gateway
 
 
 class ReleasableStack(TerraformStack):
@@ -62,10 +38,6 @@ class ReleasableStack(TerraformStack):
 
         self.aws_global_provider = provider_factory.build(
             "us-east-1", "global_aws", "global"
-        )
-
-        aws_wafregional_web_acl_main = DataAwsWafregionalWebAcl(
-            self, id="main", name=shared.web_acl_name
         )
 
         route_53_zone = DataAwsRoute53Zone(
@@ -165,183 +137,32 @@ class ReleasableStack(TerraformStack):
             },
         )
 
-        DataAwsSecretsmanagerSecretVersion(
-            self, id="repo_token", secret_id="repo_token"
-        )
-        api_gateway = ApiGatewayRestApi(
+        api_gateway_id = rest_api_gateway(
             self,
-            id="lambda_api",
-            name=shared.fqdn,
-            description=f"API Gateway for {shared.fqdn}",
-            endpoint_configuration=ApiGatewayRestApiEndpointConfiguration(
-                types=["REGIONAL"]
-            ),
-        )
+            "lambda",
+            shared.fqdn, 
+            shared.web_acl_name, 
+            route_53_zone, 
+            lambda_function, 
+            acm_cert)
+
+        aws_account_id = accounts.aws_account_id
         
-        aws_api_gateway_resource=ApiGatewayResource(
-            self,
-            id="lambda_api_proxy_resource",
-            rest_api_id=api_gateway.id,
-            parent_id=api_gateway.root_resource_id,
-            path_part="{proxy+}"
-        )
-        
-        
-        aws_api_gateway_method=ApiGatewayMethod(
-            self,
-            id="lambda_api_proxy_method",
-            rest_api_id=api_gateway.id,
-            resource_id=aws_api_gateway_resource.id,
-            http_method="ANY",
-            authorization="NONE",
-            api_key_required=False
-        )
-        
-        aws_api_gateway_integration=ApiGatewayIntegration(
-            self,
-            id="lambda_api_proxy_intergration",
-            rest_api_id=api_gateway.id,
-            resource_id=aws_api_gateway_resource.id,
-            http_method="ANY",
-            integration_http_method="POST",
-            content_handling="CONVERT_TO_TEXT",
-            type="AWS_PROXY",
-            uri=lambda_function.invoke_arn
-        )
+        self.lambda_function(app_name, aws_region, lambda_service_role, api_gateway_id, aws_account_id)
 
-        encoder = JSONEncoder()
-        
-        encoded = encoder.encode([
-                    aws_api_gateway_resource.to_terraform(),
-                    aws_api_gateway_method.to_terraform(),
-                    aws_api_gateway_integration.to_terraform()
-                ]).encode("UTF-8")
-
-        api_gateway_deployment = ApiGatewayDeployment(
-            self,
-            id="lambda_api_deployment",
-            rest_api_id=api_gateway.id,
-            triggers={
-                "redeployment": "0c4115ac845fd886d45568c49fe0c116af013c8f"
-            },
-            lifecycle=TerraformResourceLifecycle(create_before_destroy=True)
-        )
-
-        api_gateway_log_group = CloudwatchLogGroup(
-            self,
-            id="lambda_api_gateway_log_group",
-            name=f"API-Gateway-Execution-Logs_{api_gateway.id}/default",
-            retention_in_days = 7
-        )
-
-        aws_api_gateway_stage = ApiGatewayStage(
-            self,
-            id="lambda_api_gatyeway_stage",
-            stage_name="default",
-            rest_api_id=api_gateway.id,
-            deployment_id=api_gateway_deployment.id,
-            cache_cluster_enabled=False,
-            cache_cluster_size="0.5",
-            access_log_settings=ApiGatewayStageAccessLogSettings(
-                destination_arn=api_gateway_log_group.arn,
-                format="$context.identity.sourceIp $context.identity.caller $context.identity.user [$context.requestTime] \"$context.httpMethod $context.resourcePath $context.protocol\" $context.status $context.responseLength $context.requestId"
-            ),
-            tags={},
-            xray_tracing_enabled=False
-        )
-
-        WafregionalWebAclAssociation(
-            self,
-            id="lambda_api_gateway_stage_waf_association",
-            resource_arn=aws_api_gateway_stage.arn,
-            web_acl_id=aws_wafregional_web_acl_main.id
-        )
-
-        domain_name = ApiGatewayDomainName(
-            self,
-            id="lambda_permission_api_gateway_domain_name",
-            certificate_arn=acm_cert.arn,
-            domain_name=shared.fqdn,
-            security_policy="TLS_1_2"
-        )
-
-        ApiGatewayBasePathMapping(
-            self,
-            id="lambda_permission_api_gateway_base_path_mapping",
-            api_id=api_gateway.id,
-            stage_name=aws_api_gateway_stage.stage_name,
-            domain_name=domain_name.domain_name
-        )
-
-        Route53Record(
-            self,
-            id="lambda_api_gateway_route53_record",
-            name=shared.fqdn,
-            type="A",
-            zone_id=route_53_zone.id,
-            alias=[Route53RecordAlias(
-                evaluate_target_health=True,
-                name=domain_name.cloudfront_domain_name,
-                zone_id=domain_name.cloudfront_zone_id
-            )]
-        )
-
-        ApiGatewayMethodSettings(
-            self,
-            id="lambda_api_gateway_method_settings",
-            rest_api_id=api_gateway.id,
-            stage_name=aws_api_gateway_stage.stage_name,
-            method_path="*/*",
-            settings=ApiGatewayMethodSettingsSettings(
-                metrics_enabled=True,
-                logging_level="INFO"
-            )
-        )
-
-        ApiGatewayRestApiPolicy(
-            self,
-            id="lambda_api_gateway_api_policy",
-            rest_api_id=api_gateway.id,
-            policy=json.dumps(
-                {
-                    "Version": "2012-10-17",
-                    "Statement": [
-                        {
-                            "Effect": "Allow",
-                            "Principal": "*",
-                            "Action": "execute-api:Invoke",
-                            "Resource": f"{api_gateway.execution_arn}/*"
-                        },
-                        {
-                            "Effect": "Deny",
-                            "Principal": "*",
-                            "Action": "execute-api:Invoke",
-                            "Resource": f"{api_gateway.execution_arn}/*",
-                            "Condition": {
-                                "NotIpAddress": {
-                                    "aws:SourceIp": "81.174.166.51/32"
-                                }
-                            }
-                        }
-                    ]
-                }
-            )
-        )
-
-        api_gateway_id = api_gateway.id
-
+    def lambda_function(stack, app_name, aws_region, lambda_service_role, api_gateway_id, aws_account_id):
         LambdaPermission(
-            self,
+            stack,
             id="lambda_permission_api_gateway",
             statement_id="releasable-api-gateway-access",
-            function_name="releasable",
+            function_name=app_name,
             principal="apigateway.amazonaws.com",
             action="lambda:InvokeFunction",
-            source_arn=f"arn:aws:execute-api:eu-west-1:481652375433:{api_gateway_id}/*/*/*",
+            source_arn=f"arn:aws:execute-api:{aws_region}:{aws_account_id}:{api_gateway_id}/*/*/*",
         )
 
         lambda_log_access = IamPolicy(
-            self,
+            stack,
             id="lambda_log_access_policy",
             name="releasable-lambda-CloudWatchWriteAccess",
             policy=json.dumps(
@@ -350,7 +171,7 @@ class ReleasableStack(TerraformStack):
                     "Statement": [
                         {
                             "Action": ["logs:PutLogEvents", "logs:CreateLogStream"],
-                            "Resource": f"arn:aws:logs:{aws_region}:{accounts.aws_account_id}:log-group:/aws/lambda/{app_name}:*",
+                            "Resource": f"arn:aws:logs:{aws_region}:{aws_account_id}:log-group:/aws/lambda/{app_name}:*",
                             "Effect": "Allow",
                         },
                         {
@@ -367,15 +188,15 @@ class ReleasableStack(TerraformStack):
         )
 
         IamRolePolicyAttachment(
-            self,
+            stack,
             id="lambda_log_access_role_policy_attachement",
             role=lambda_service_role.name,
             policy_arn=lambda_log_access.arn,
         )
 
         CloudwatchLogGroup(
-            self,
+            stack,
             id="lambda_log_group",
-            name=f"/aws/lambda/{lambda_function.function_name}",
+            name=f"/aws/lambda/{app_name}",
             retention_in_days=14,
         )

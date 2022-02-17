@@ -1,9 +1,33 @@
 #!/usr/bin/env python
 import os
+import json
+from json import JSONEncoder
 
+from cdktf import TerraformResourceLifecycle
+from cdktf_cdktf_provider_aws.wafregional import (
+    WafregionalWebAclAssociation,
+)
+from cdktf_cdktf_provider_aws.cloudwatch import CloudwatchLogGroup
 from cdktf_cdktf_provider_aws.acm import DataAwsAcmCertificate
 from constructs import Construct
 from cdktf import S3Backend
+from cdktf_cdktf_provider_aws.wafregional import DataAwsWafregionalWebAcl
+from cdktf_cdktf_provider_aws.route53 import Route53Record, Route53RecordAlias
+from cdktf_cdktf_provider_aws.apigateway import (
+    ApiGatewayRestApi,
+    ApiGatewayRestApiEndpointConfiguration,
+    ApiGatewayDeployment,
+    ApiGatewayRestApiPolicy,
+    ApiGatewayStage,
+    ApiGatewayStageAccessLogSettings,
+    ApiGatewayBasePathMapping,
+    ApiGatewayMethod,
+    ApiGatewayMethodSettings,
+    ApiGatewayMethodSettingsSettings,
+    ApiGatewayResource,
+    ApiGatewayIntegration,
+    ApiGatewayDomainName,
+)
 
 
 def get_environment(scope: Construct, ns: str):
@@ -62,3 +86,158 @@ def create_backend(stack, config, accounts, ns):
         )
 
     S3Backend(stack, **backend_args)
+
+def rest_api_gateway(stack, id, fqdn, web_acl_name, route_53_zone, lambda_function, acm_cert):
+    encoder = JSONEncoder()
+    
+    def encode(o):
+        return encoder.encode(o.to_terraform())
+    
+    aws_wafregional_web_acl = DataAwsWafregionalWebAcl(
+        stack, id="main", name=web_acl_name
+    )
+
+    api_gateway = ApiGatewayRestApi(
+        stack,
+        id=f"{id}_api",
+        name=fqdn,
+        description=f"API Gateway for {fqdn}",
+        endpoint_configuration=ApiGatewayRestApiEndpointConfiguration(
+            types=["REGIONAL"]
+        ),
+    )
+    
+    proxy_resource=ApiGatewayResource(
+        stack,
+        id=f"{id}_api_proxy_resource",
+        rest_api_id=api_gateway.id,
+        parent_id=api_gateway.root_resource_id,
+        path_part="{proxy+}"
+    )
+    
+    
+    proxy_method=ApiGatewayMethod(
+        stack,
+        id=f"{id}_api_proxy_method",
+        rest_api_id=api_gateway.id,
+        resource_id=proxy_resource.id,
+        http_method="ANY",
+        authorization="NONE",
+        api_key_required=False
+    )
+    
+    proxy_integration=ApiGatewayIntegration(
+        stack,
+        id=f"{id}_api_proxy_intergration",
+        rest_api_id=api_gateway.id,
+        resource_id=proxy_resource.id,
+        http_method="ANY",
+        integration_http_method="POST",
+        content_handling="CONVERT_TO_TEXT",
+        type="AWS_PROXY",
+        uri=lambda_function.invoke_arn
+    )
+
+    deployment = ApiGatewayDeployment(
+        stack,
+        id=f"{id}_api_deployment",
+        rest_api_id=api_gateway.id,
+        triggers={
+            "resource": encode(proxy_resource),
+            "method": encode(proxy_method),
+            "integration": encode(proxy_integration)
+        },
+        lifecycle=TerraformResourceLifecycle(create_before_destroy=True)
+    )
+
+    log_group = CloudwatchLogGroup(
+        stack,
+        id=f"{id}_api_gateway_log_group",
+        name=f"API-Gateway-Execution-Logs_{api_gateway.id}/default",
+        retention_in_days = 7
+    )
+
+    stage = ApiGatewayStage(
+        stack,
+        id=f"{id}_api_gateway_stage",
+        stage_name="default",
+        rest_api_id=api_gateway.id,
+        deployment_id=deployment.id,
+        cache_cluster_enabled=False,
+        cache_cluster_size="0.5",
+        access_log_settings=ApiGatewayStageAccessLogSettings(
+            destination_arn=log_group.arn,
+            format="$context.identity.sourceIp $context.identity.caller $context.identity.user [$context.requestTime] \"$context.httpMethod $context.resourcePath $context.protocol\" $context.status $context.responseLength $context.requestId"
+        ),
+        tags={},
+        xray_tracing_enabled=False
+    )
+
+    WafregionalWebAclAssociation(
+        stack,
+        id=f"{id}_api_gateway_stage_waf_association",
+        resource_arn=stage.arn,
+        web_acl_id=aws_wafregional_web_acl.id
+    )
+
+    domain_name = ApiGatewayDomainName(
+        stack,
+        id=f"{id}_permission_api_gateway_domain_name",
+        certificate_arn=acm_cert.arn,
+        domain_name=fqdn,
+        security_policy="TLS_1_2"
+    )
+
+    ApiGatewayBasePathMapping(
+        stack,
+        id=f"{id}_permission_api_gateway_base_path_mapping",
+        api_id=api_gateway.id,
+        stage_name=stage.stage_name,
+        domain_name=domain_name.domain_name
+    )
+
+    Route53Record(
+        stack,
+        id=f"{id}_api_gateway_route53_record",
+        name=fqdn,
+        type="A",
+        zone_id=route_53_zone.id,
+        alias=[Route53RecordAlias(
+            evaluate_target_health=True,
+            name=domain_name.cloudfront_domain_name,
+            zone_id=domain_name.cloudfront_zone_id
+        )]
+    )
+
+    ApiGatewayMethodSettings(
+        stack,
+        id=f"{id}_api_gateway_method_settings",
+        rest_api_id=api_gateway.id,
+        stage_name=stage.stage_name,
+        method_path="*/*",
+        settings=ApiGatewayMethodSettingsSettings(
+            metrics_enabled=True,
+            logging_level="INFO"
+        )
+    )
+
+    ApiGatewayRestApiPolicy(
+        stack,
+        id=f"{id}_api_gateway_api_policy",
+        rest_api_id=api_gateway.id,
+        policy=json.dumps(
+            {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Principal": "*",
+                        "Action": "execute-api:Invoke",
+                        "Resource": f"{api_gateway.execution_arn}/*"
+                    }
+                ]
+            }
+        )
+    )
+
+    return api_gateway.id

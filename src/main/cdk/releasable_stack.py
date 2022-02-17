@@ -1,13 +1,32 @@
 import json
+from json import JSONEncoder
+from hashlib import sha1
+from sre_constants import SRE_FLAG_MULTILINE
 
 from cdktf_cdktf_provider_aws.lambdafunction import LambdaPermission
 from cdktf_cdktf_provider_aws.secretsmanager import DataAwsSecretsmanagerSecretVersion
 from cdktf_cdktf_provider_aws.lambdafunction import LambdaFunction
 from cdktf_cdktf_provider_aws.iam import IamRole, IamRolePolicyAttachment, IamPolicy
-from cdktf_cdktf_provider_aws.route53 import DataAwsRoute53Zone
-from cdktf_cdktf_provider_aws.wafregional import DataAwsWafregionalWebAcl
+from cdktf_cdktf_provider_aws.route53 import DataAwsRoute53Zone, Route53Record
+from cdktf_cdktf_provider_aws.wafregional import (
+    DataAwsWafregionalWebAcl,
+    WafregionalWebAclAssociation,
+)
 from cdktf import TerraformHclModule, TerraformLocal, TerraformStack
 from cdktf_cdktf_provider_aws.cloudwatch import CloudwatchLogGroup
+from cdktf_cdktf_provider_aws.apigateway import (
+    ApiGatewayRestApi,
+    ApiGatewayRestApiEndpointConfiguration,
+    ApiGatewayDeployment,
+    ApiGatewayRestApiPolicy,
+    ApiGatewayStage,
+    ApiGatewayBasePathMapping,
+    ApiGatewayMethod,
+    ApiGatewayMethodSettings,
+    ApiGatewayResource,
+    ApiGatewayIntegration,
+    ApiGatewayDomainName,
+)
 from constructs import Construct
 
 from murraytait_cdktf.shared import Shared
@@ -209,4 +228,57 @@ class ReleasableStack(TerraformStack):
             id="lambda_log_group",
             name=f"/aws/lambda/{lambda_function.function_name}",
             retention_in_days=14,
+        )
+
+        api_gateway = ApiGatewayRestApi(
+            self,
+            id="lambda_api",
+            description=f"API Gateway for ${config.tldn}",
+            endpoint_configuration=ApiGatewayRestApiEndpointConfiguration(
+                types=["Regional"]
+            ),
+        )
+        
+        aws_api_gateway_resource=ApiGatewayResource(
+            self,
+            id="lambda_api_proxy_resource",
+            rest_api_id=api_gateway.id,
+            parent_id=api_gateway.root_resource_id,
+            path_part="{proxy+}"
+        )
+        
+        
+        aws_api_gateway_method=ApiGatewayMethod(
+            self,
+            id="lambda_api_proxy_method",
+            rest_api_id=api_gateway.id,
+            resource_id=aws_api_gateway_resource.id,
+            http_method="ANY",
+            authorization="NONE",
+            api_key_required=False
+        )
+        
+        aws_api_gateway_integration=ApiGatewayIntegration(
+            self,
+            id="lambda_api_proxy_intergration",
+            rest_api_id=api_gateway.id,
+            resource_id=aws_api_gateway_resource.id,
+            http_method="ANY",
+            integration_http_method="POST",
+            content_handling="CONVERT_TO_TEXT",
+            type="AWS_PROXY",
+            uri=lambda_function.lambda_invoke_arn
+        )
+        
+        ApiGatewayDeployment(
+            self,
+            id="lambda_api_deployment",
+            rest_api_id=api_gateway.id,
+            triggers={
+                "redeployment": sha1(JSONEncoder.encode([
+                    aws_api_gateway_resource.proxy,
+                    aws_api_gateway_method.proxy,
+                    aws_api_gateway_integration.proxy
+                ]))                
+            }            
         )

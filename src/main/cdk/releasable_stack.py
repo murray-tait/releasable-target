@@ -1,10 +1,19 @@
 import json
 
 from cdktf_cdktf_provider_aws.lambdafunction import LambdaPermission, LambdaFunction
-from cdktf_cdktf_provider_aws.iam import IamRole, IamRolePolicyAttachment, IamPolicy
+from cdktf_cdktf_provider_aws.iam import (
+    IamRole,
+    IamRolePolicyAttachment,
+    IamPolicy,
+    DataAwsIamPolicyDocumentStatement,
+    DataAwsIamPolicyDocument,
+)
 from cdktf_cdktf_provider_aws.route53 import DataAwsRoute53Zone
-from cdktf_cdktf_provider_aws.wafregional import DataAwsWafregionalWebAcl
-from cdktf import TerraformHclModule, TerraformLocal, TerraformStack, TerraformResourceLifecycle
+from cdktf import (
+    TerraformHclModule,
+    TerraformStack,
+    TerraformResourceLifecycle,
+)
 from cdktf_cdktf_provider_aws.cloudwatch import CloudwatchLogGroup
 from constructs import Construct
 
@@ -13,7 +22,13 @@ from murraytait_cdktf.provider_factory import ProviderFactory
 from murraytait_cdktf.accounts import Accounts
 from murraytait_cdktf.config import Config
 
-from env import get_environment, file, environment_certificate, create_backend, rest_api_gateway
+from env import (
+    get_environment,
+    file,
+    environment_certificate,
+    create_backend,
+    rest_api_gateway,
+)
 
 
 class ReleasableStack(TerraformStack):
@@ -51,50 +66,13 @@ class ReleasableStack(TerraformStack):
             assume_role_policy=file("policies/lambda_service_role.json"),
         )
 
-        lambda_function = LambdaFunction(
-            scope=self,
-            id="lambda",
-            function_name=app_name,
-            runtime="provided",
-            handler="bootstrap",
-            timeout=30,
-            role=lambda_service_role.arn,
-            s3_bucket=shared.destination_builds_bucket_name,
-            s3_key=f"builds/{app_name}/refs/branch/{self.environment}/lambda.zip",
-            lifecycle=TerraformResourceLifecycle(
-                ignore_changes=["last_modified"]
-            )
-        )
-
-        TerraformHclModule(
-            self,
-            id="lambda_pipeline",
-            source="git@github.com:deathtumble/terraform_modules.git//modules/lambda_pipeline?ref=v0.4.2",
-            # source="../../../../terraform/modules/lambda_pipeline",
-            variables={
-                "application_name": app_name,
-                "destination_builds_bucket_name": shared.destination_builds_bucket_name,
-                "function_names": [lambda_function.function_name],
-                "function_arns": [lambda_function.arn],
-                "aws_sns_topic_env_build_notification_name": shared.aws_sns_topic_env_build_notification_name,
-                "aws_account_id": accounts.aws_account_id,
-            },
-        )
-
         acm_cert = environment_certificate(
             self, self.aws_global_provider, shared.environment_domain_name
         )
 
-        terraform_build_artifact_key = (
-            f"builds/{app_name}/refs/branch/{self.environment}/terraform.zip"
-        )
-        TerraformLocal(
-            self, "terraform_build_artifact_key", terraform_build_artifact_key
-        )
         build_artifact_key = (
             f"builds/{app_name}/refs/branch/{self.environment}/cloudfront.zip"
         )
-        TerraformLocal(self, "build_artifact_key", build_artifact_key)
 
         TerraformHclModule(
             self,
@@ -121,7 +99,6 @@ class ReleasableStack(TerraformStack):
             "REACT_APP_AWS_COGNITO_COOKIE_EXPIRY_MINS": 55,
             "REACT_APP_AWS_COGNITO_COOKIE_SECURE": True,
         }
-        TerraformLocal(self, "web_config", web_config)
 
         TerraformHclModule(
             self,
@@ -140,63 +117,114 @@ class ReleasableStack(TerraformStack):
         api_gateway_id = rest_api_gateway(
             self,
             "lambda",
-            shared.fqdn, 
-            shared.web_acl_name, 
-            route_53_zone, 
-            lambda_function, 
-            acm_cert)
-
-        aws_account_id = accounts.aws_account_id
-        
-        self.lambda_function(app_name, aws_region, lambda_service_role, api_gateway_id, aws_account_id)
-
-    def lambda_function(stack, app_name, aws_region, lambda_service_role, api_gateway_id, aws_account_id):
-        LambdaPermission(
-            stack,
-            id="lambda_permission_api_gateway",
-            statement_id="releasable-api-gateway-access",
-            function_name=app_name,
-            principal="apigateway.amazonaws.com",
-            action="lambda:InvokeFunction",
-            source_arn=f"arn:aws:execute-api:{aws_region}:{aws_account_id}:{api_gateway_id}/*/*/*",
+            shared.fqdn,
+            shared.web_acl_name,
+            route_53_zone,
+            acm_cert,
+            aws_region,
+            accounts.aws_account_id,
+            app_name,
         )
 
-        lambda_log_access = IamPolicy(
-            stack,
-            id="lambda_log_access_policy",
-            name="releasable-lambda-CloudWatchWriteAccess",
-            policy=json.dumps(
-                {
-                    "Version": "2012-10-17",
-                    "Statement": [
-                        {
-                            "Action": ["logs:PutLogEvents", "logs:CreateLogStream"],
-                            "Resource": f"arn:aws:logs:{aws_region}:{aws_account_id}:log-group:/aws/lambda/{app_name}:*",
-                            "Effect": "Allow",
-                        },
-                        {
-                            "Action": [
-                                "xray:PutTraceSegments",
-                                "xray:PutTelemetryRecords",
-                            ],
-                            "Resource": "*",
-                            "Effect": "Allow",
-                        },
-                    ],
-                }
+        create_lambda_function(
+            self,
+            app_name,
+            aws_region,
+            lambda_service_role,
+            api_gateway_id,
+            accounts.aws_account_id,
+            shared.destination_builds_bucket_name,
+            self.environment,
+            shared.aws_sns_topic_env_build_notification_name,
+        )
+
+
+def create_lambda_function(
+    stack,
+    name,
+    aws_region,
+    lambda_service_role,
+    api_gateway_id,
+    aws_account_id,
+    destination_builds_bucket_name,
+    environment,
+    aws_sns_topic_env_build_notification_name,
+    extra_statement=[],
+):
+    lambda_function = LambdaFunction(
+        scope=stack,
+        id="lambda",
+        function_name=name,
+        runtime="provided",
+        handler="bootstrap",
+        timeout=30,
+        role=lambda_service_role.arn,
+        s3_bucket=destination_builds_bucket_name,
+        s3_key=f"builds/{name}/refs/branch/{environment}/lambda.zip",
+        lifecycle=TerraformResourceLifecycle(ignore_changes=["last_modified"]),
+    )
+
+    TerraformHclModule(
+        stack,
+        id="lambda_pipeline",
+        source="git@github.com:deathtumble/terraform_modules.git//modules/lambda_pipeline?ref=v0.4.2",
+        # source="../../../../terraform/modules/lambda_pipeline",
+        variables={
+            "application_name": name,
+            "destination_builds_bucket_name": destination_builds_bucket_name,
+            "function_names": [lambda_function.function_name],
+            "function_arns": [lambda_function.arn],
+            "aws_sns_topic_env_build_notification_name": aws_sns_topic_env_build_notification_name,
+            "aws_account_id": aws_account_id,
+        },
+    )
+    LambdaPermission(
+        stack,
+        id="lambda_permission_api_gateway",
+        statement_id="releasable-api-gateway-access",
+        function_name=name,
+        principal="apigateway.amazonaws.com",
+        action="lambda:InvokeFunction",
+        source_arn=f"arn:aws:execute-api:{aws_region}:{aws_account_id}:{api_gateway_id}/*/*/*",
+    )
+
+    policy_document = DataAwsIamPolicyDocument(
+        stack,
+        id="lambda_log_access_policy_document",
+        statement=extra_statement
+        + [
+            DataAwsIamPolicyDocumentStatement(
+                actions=["logs:PutLogEvents", "logs:CreateLogStream"],
+                resources=[
+                    f"arn:aws:logs:{aws_region}:{aws_account_id}:log-group:/aws/lambda/{name}:*"
+                ],
+                effect="Allow",
             ),
-        )
+            DataAwsIamPolicyDocumentStatement(
+                actions=["xray:PutTraceSegments", "xray:PutTelemetryRecords"],
+                resources=["*"],
+                effect="Allow",
+            ),
+        ],
+    )
 
-        IamRolePolicyAttachment(
-            stack,
-            id="lambda_log_access_role_policy_attachement",
-            role=lambda_service_role.name,
-            policy_arn=lambda_log_access.arn,
-        )
+    lambda_log_access = IamPolicy(
+        stack,
+        id="lambda_log_access_policy",
+        name="releasable-lambda-CloudWatchWriteAccess",
+        policy=policy_document.json,
+    )
 
-        CloudwatchLogGroup(
-            stack,
-            id="lambda_log_group",
-            name=f"/aws/lambda/{app_name}",
-            retention_in_days=14,
-        )
+    IamRolePolicyAttachment(
+        stack,
+        id="lambda_log_access_role_policy_attachement",
+        role=lambda_service_role.name,
+        policy_arn=lambda_log_access.arn,
+    )
+
+    CloudwatchLogGroup(
+        stack,
+        id="lambda_log_group",
+        name=f"/aws/lambda/{name}",
+        retention_in_days=14,
+    )

@@ -87,12 +87,23 @@ def create_backend(stack, config, accounts, ns):
 
     S3Backend(stack, **backend_args)
 
-def rest_api_gateway(stack, id, fqdn, web_acl_name, route_53_zone, lambda_function, acm_cert):
+
+def rest_api_gateway(
+    stack,
+    id,
+    fqdn,
+    web_acl_name,
+    route_53_zone,
+    acm_cert,
+    aws_region,
+    aws_account_id,
+    lambda_name,
+):
     encoder = JSONEncoder()
-    
+
     def encode(o):
         return encoder.encode(o.to_terraform())
-    
+
     aws_wafregional_web_acl = DataAwsWafregionalWebAcl(
         stack, id="main", name=web_acl_name
     )
@@ -106,27 +117,26 @@ def rest_api_gateway(stack, id, fqdn, web_acl_name, route_53_zone, lambda_functi
             types=["REGIONAL"]
         ),
     )
-    
-    proxy_resource=ApiGatewayResource(
+
+    proxy_resource = ApiGatewayResource(
         stack,
         id=f"{id}_api_proxy_resource",
         rest_api_id=api_gateway.id,
         parent_id=api_gateway.root_resource_id,
-        path_part="{proxy+}"
+        path_part="{proxy+}",
     )
-    
-    
-    proxy_method=ApiGatewayMethod(
+
+    proxy_method = ApiGatewayMethod(
         stack,
         id=f"{id}_api_proxy_method",
         rest_api_id=api_gateway.id,
         resource_id=proxy_resource.id,
         http_method="ANY",
         authorization="NONE",
-        api_key_required=False
+        api_key_required=False,
     )
-    
-    proxy_integration=ApiGatewayIntegration(
+
+    proxy_integration = ApiGatewayIntegration(
         stack,
         id=f"{id}_api_proxy_intergration",
         rest_api_id=api_gateway.id,
@@ -135,7 +145,7 @@ def rest_api_gateway(stack, id, fqdn, web_acl_name, route_53_zone, lambda_functi
         integration_http_method="POST",
         content_handling="CONVERT_TO_TEXT",
         type="AWS_PROXY",
-        uri=lambda_function.invoke_arn
+        uri=f"arn:aws:apigateway:{aws_region}:lambda:path/2015-03-31/functions/arn:aws:lambda:{aws_region}:{aws_account_id}:function:{lambda_name}/invocations",
     )
 
     deployment = ApiGatewayDeployment(
@@ -145,16 +155,16 @@ def rest_api_gateway(stack, id, fqdn, web_acl_name, route_53_zone, lambda_functi
         triggers={
             "resource": encode(proxy_resource),
             "method": encode(proxy_method),
-            "integration": encode(proxy_integration)
+            "integration": encode(proxy_integration),
         },
-        lifecycle=TerraformResourceLifecycle(create_before_destroy=True)
+        lifecycle=TerraformResourceLifecycle(create_before_destroy=True),
     )
 
     log_group = CloudwatchLogGroup(
         stack,
         id=f"{id}_api_gateway_log_group",
         name=f"API-Gateway-Execution-Logs_{api_gateway.id}/default",
-        retention_in_days = 7
+        retention_in_days=7,
     )
 
     stage = ApiGatewayStage(
@@ -167,17 +177,17 @@ def rest_api_gateway(stack, id, fqdn, web_acl_name, route_53_zone, lambda_functi
         cache_cluster_size="0.5",
         access_log_settings=ApiGatewayStageAccessLogSettings(
             destination_arn=log_group.arn,
-            format="$context.identity.sourceIp $context.identity.caller $context.identity.user [$context.requestTime] \"$context.httpMethod $context.resourcePath $context.protocol\" $context.status $context.responseLength $context.requestId"
+            format='$context.identity.sourceIp $context.identity.caller $context.identity.user [$context.requestTime] "$context.httpMethod $context.resourcePath $context.protocol" $context.status $context.responseLength $context.requestId',
         ),
         tags={},
-        xray_tracing_enabled=False
+        xray_tracing_enabled=False,
     )
 
     WafregionalWebAclAssociation(
         stack,
         id=f"{id}_api_gateway_stage_waf_association",
         resource_arn=stage.arn,
-        web_acl_id=aws_wafregional_web_acl.id
+        web_acl_id=aws_wafregional_web_acl.id,
     )
 
     domain_name = ApiGatewayDomainName(
@@ -185,7 +195,7 @@ def rest_api_gateway(stack, id, fqdn, web_acl_name, route_53_zone, lambda_functi
         id=f"{id}_permission_api_gateway_domain_name",
         certificate_arn=acm_cert.arn,
         domain_name=fqdn,
-        security_policy="TLS_1_2"
+        security_policy="TLS_1_2",
     )
 
     ApiGatewayBasePathMapping(
@@ -193,7 +203,7 @@ def rest_api_gateway(stack, id, fqdn, web_acl_name, route_53_zone, lambda_functi
         id=f"{id}_permission_api_gateway_base_path_mapping",
         api_id=api_gateway.id,
         stage_name=stage.stage_name,
-        domain_name=domain_name.domain_name
+        domain_name=domain_name.domain_name,
     )
 
     Route53Record(
@@ -202,11 +212,13 @@ def rest_api_gateway(stack, id, fqdn, web_acl_name, route_53_zone, lambda_functi
         name=fqdn,
         type="A",
         zone_id=route_53_zone.id,
-        alias=[Route53RecordAlias(
-            evaluate_target_health=True,
-            name=domain_name.cloudfront_domain_name,
-            zone_id=domain_name.cloudfront_zone_id
-        )]
+        alias=[
+            Route53RecordAlias(
+                evaluate_target_health=True,
+                name=domain_name.cloudfront_domain_name,
+                zone_id=domain_name.cloudfront_zone_id,
+            )
+        ],
     )
 
     ApiGatewayMethodSettings(
@@ -216,9 +228,8 @@ def rest_api_gateway(stack, id, fqdn, web_acl_name, route_53_zone, lambda_functi
         stage_name=stage.stage_name,
         method_path="*/*",
         settings=ApiGatewayMethodSettingsSettings(
-            metrics_enabled=True,
-            logging_level="INFO"
-        )
+            metrics_enabled=True, logging_level="INFO"
+        ),
     )
 
     ApiGatewayRestApiPolicy(
@@ -233,11 +244,11 @@ def rest_api_gateway(stack, id, fqdn, web_acl_name, route_53_zone, lambda_functi
                         "Effect": "Allow",
                         "Principal": "*",
                         "Action": "execute-api:Invoke",
-                        "Resource": f"{api_gateway.execution_arn}/*"
+                        "Resource": f"{api_gateway.execution_arn}/*",
                     }
-                ]
+                ],
             }
-        )
+        ),
     )
 
     return api_gateway.id

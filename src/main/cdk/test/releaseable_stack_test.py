@@ -6,13 +6,15 @@ from jsii._kernel.providers.process import InvokeResponse
 from jsii._kernel.providers.process import CreateRequest
 import jsii
 
+
 @patch("cdk.releasable_stack.get_environment")
 @patch("cdk.releasable_stack.Accounts")
 @patch("cdk.releasable_stack.Config")
+@patch("cdk.releasable_stack.prepare_zip")
 # @patch("jsii._kernel.providers.process.ProcessProvider.invoke")
-def test_happy_path(Config, Accounts, get_environment):
+def test_happy_path(prepare_zip, Config, Accounts, get_environment):
     # Arrange
-    
+
     mock_config = Config.return_value
     provider = jsii.kernel.provider
     mock_provider = Mock(wraps=provider)
@@ -38,9 +40,11 @@ def test_happy_path(Config, Accounts, get_environment):
     )
     type(mock_accounts).dns_account_id = PropertyMock(return_value="build_account_id")
     #    invoke.return_value = InvokeResponse(result=None)
+    
+    prepare_zip.return_value="abcdf"
 
     app = App()
-    
+
     # Action
     ReleasableStack(app, "release")
 

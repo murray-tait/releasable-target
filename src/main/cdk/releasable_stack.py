@@ -37,6 +37,7 @@ from env import (
     rest_api_gateway,
     attach_policy,
     create_assume_role_policy,
+    prepare_zip,
 )
 
 
@@ -181,13 +182,7 @@ class ReleasableStack(TerraformStack):
 
         source_file_name = "lambda_updater.py"
         archive_file_name = "lambda_updater.zip"
-        zipObj = ZipFile(scope.outdir + "/stacks/" + ns + "/" + archive_file_name, "w")
-        zipObj.write(source_file_name)
-        zipObj.close()
-
-        with open(scope.outdir + "/stacks/" + ns + "/" + archive_file_name, "rb") as f:
-            bytes = f.read()  # read entire file as bytes
-            readable_hash = hashlib.sha256(bytes).hexdigest()
+        readable_hash = prepare_zip(ns, scope, source_file_name, archive_file_name)
 
         lambda_function = LambdaFunction(
             self,

@@ -2,6 +2,8 @@
 import os
 import json
 from json import JSONEncoder
+from zipfile import ZipFile
+import hashlib
 
 from cdktf import TerraformResourceLifecycle
 from cdktf_cdktf_provider_aws.wafregional import (
@@ -35,6 +37,7 @@ from cdktf_cdktf_provider_aws.iam import (
     DataAwsIamPolicyDocument,
     DataAwsIamPolicyDocumentStatementPrincipals,
 )
+
 
 def get_environment(scope: Construct, ns: str):
     environment = None
@@ -95,13 +98,7 @@ def create_backend(stack, config, accounts, ns):
 
 
 def rest_api_gateway(
-    stack,
-    id,
-    fqdn,
-    web_acl_name,
-    route_53_zone,
-    acm_cert,
-    invoke_arn
+    stack, id, fqdn, web_acl_name, route_53_zone, acm_cert, invoke_arn
 ):
     encoder = JSONEncoder()
 
@@ -257,23 +254,37 @@ def rest_api_gateway(
 
     return api_gateway.id
 
+
+def prepare_zip(ns, scope, source_file_name, archive_file_name):
+    zipObj = ZipFile(scope.outdir + "/stacks/" + ns + "/" + archive_file_name, "w")
+    zipObj.write(source_file_name)
+    zipObj.close()
+
+    with open(scope.outdir + "/stacks/" + ns + "/" + archive_file_name, "rb") as f:
+        bytes = f.read()
+        readable_hash = hashlib.sha256(bytes).hexdigest()
+    return readable_hash
+
+
 def create_assume_role_policy(stack, service_id, lambda_service_role_name):
-    assume_role_policy=DataAwsIamPolicyDocument(
+    assume_role_policy = DataAwsIamPolicyDocument(
         stack,
         id=f"{lambda_service_role_name}_assume_role_policy",
         statement=[
             DataAwsIamPolicyDocumentStatement(
                 actions=["sts:AssumeRole"],
                 effect="Allow",
-                principals=[DataAwsIamPolicyDocumentStatementPrincipals(
-                    identifiers=[service_id],
-                    type="Service"
-                )]
+                principals=[
+                    DataAwsIamPolicyDocumentStatementPrincipals(
+                        identifiers=[service_id], type="Service"
+                    )
+                ],
             )
-        ]
+        ],
     )
-    
+
     return assume_role_policy
+
 
 def attach_policy(stack, name, lambda_service_role, statements):
     policy_document = DataAwsIamPolicyDocument(

@@ -15,6 +15,7 @@ if BRANCH_NAME == "":
 if len(FUNCTION_NAMES) == 0:
     raise Exception("$FUNCTION_NAMES must be set")
 
+
 def updater(event, context):
     print("Handling event: {}".format(json.dumps(event, sort_keys=True)))
 
@@ -31,6 +32,7 @@ def updater(event, context):
 
         process_record(actual_event["Records"][0])
 
+
 def process_record(record):
     bucket = record["s3"]["bucket"]["name"]
     key = record["s3"]["object"]["key"]
@@ -41,18 +43,16 @@ def process_record(record):
     else:
         print("ignoring")
 
+
 def update_lambda(bucket, key):
     client = boto3.client("lambda")
 
     for function in FUNCTION_NAMES:
         print("Updating {}".format(function))
 
-        client.update_function_code(
-            FunctionName=function,
-            S3Bucket = bucket,
-            S3Key = key
-        )
+        client.update_function_code(FunctionName=function, S3Bucket=bucket, S3Key=key)
+
 
 def we_should_care(key):
-    path = "builds/{}/refs/branch/{}/lambda.zip".format(APPLICATION_NAME, BRANCH_NAME)
+    path = "builds/{}/refs/heads/{}/lambda.zip".format(APPLICATION_NAME, BRANCH_NAME)
     return key == path

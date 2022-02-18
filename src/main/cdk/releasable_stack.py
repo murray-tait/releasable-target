@@ -1,13 +1,28 @@
-import json
+from zipfile import ZipFile
+import hashlib
 
-from cdktf_cdktf_provider_aws.lambdafunction import LambdaPermission
-from cdktf_cdktf_provider_aws.secretsmanager import DataAwsSecretsmanagerSecretVersion
-from cdktf_cdktf_provider_aws.lambdafunction import LambdaFunction
-from cdktf_cdktf_provider_aws.iam import IamRole, IamRolePolicyAttachment, IamPolicy
+from cdktf_cdktf_provider_aws.lambdafunction import (
+    LambdaPermission,
+    LambdaFunction,
+    LambdaFunctionEnvironment,
+)
+from cdktf_cdktf_provider_aws.iam import (
+    IamRole,
+    DataAwsIamPolicyDocumentStatement,
+)
 from cdktf_cdktf_provider_aws.route53 import DataAwsRoute53Zone
-from cdktf_cdktf_provider_aws.wafregional import DataAwsWafregionalWebAcl
-from cdktf import TerraformHclModule, TerraformLocal, TerraformStack
+from cdktf import (
+    TerraformHclModule,
+    TerraformStack,
+    TerraformResourceLifecycle,
+)
 from cdktf_cdktf_provider_aws.cloudwatch import CloudwatchLogGroup
+from cdktf_cdktf_provider_aws.sns import (
+    SnsTopic,
+    SnsTopicPolicy,
+    SnsTopicSubscription,
+    DataAwsSnsTopic,
+)
 from constructs import Construct
 
 from murraytait_cdktf.shared import Shared
@@ -15,7 +30,15 @@ from murraytait_cdktf.provider_factory import ProviderFactory
 from murraytait_cdktf.accounts import Accounts
 from murraytait_cdktf.config import Config
 
-from env import get_environment, file, environment_certificate, create_backend
+from env import (
+    get_environment,
+    environment_certificate,
+    create_backend,
+    rest_api_gateway,
+    attach_policy,
+    create_assume_role_policy,
+    prepare_zip,
+)
 
 
 class ReleasableStack(TerraformStack):
@@ -42,77 +65,17 @@ class ReleasableStack(TerraformStack):
             "us-east-1", "global_aws", "global"
         )
 
-        aws_wafregional_web_acl_main = DataAwsWafregionalWebAcl(
-            self, id="main", name=shared.web_acl_name
-        )
-
         route_53_zone = DataAwsRoute53Zone(
             self, id="environment", name=shared.environment_domain_name
-        )
-
-        lambda_service_role = IamRole(
-            self,
-            id="lambda_service_role",
-            name=f"{app_name}-lambda-executeRole",
-            assume_role_policy=file("policies/lambda_service_role.json"),
-        )
-
-        lambda_function = LambdaFunction(
-            scope=self,
-            id="lambda",
-            function_name=app_name,
-            runtime="provided",
-            handler="bootstrap",
-            timeout=30,
-            role=lambda_service_role.arn,
-            s3_bucket=shared.destination_builds_bucket_name,
-            s3_key=f"builds/{app_name}/refs/branch/{self.environment}/lambda.zip",
-        )
-
-        TerraformHclModule(
-            self,
-            id="lambda_pipeline",
-            source="git@github.com:deathtumble/terraform_modules.git//modules/lambda_pipeline?ref=v0.4.2",
-            # source="../../../../terraform/modules/lambda_pipeline",
-            variables={
-                "application_name": app_name,
-                "destination_builds_bucket_name": shared.destination_builds_bucket_name,
-                "function_names": [lambda_function.function_name],
-                "function_arns": [lambda_function.arn],
-                "aws_sns_topic_env_build_notification_name": shared.aws_sns_topic_env_build_notification_name,
-                "aws_account_id": accounts.aws_account_id,
-            },
         )
 
         acm_cert = environment_certificate(
             self, self.aws_global_provider, shared.environment_domain_name
         )
 
-        api_gateway_module = TerraformHclModule(
-            self,
-            id="api_gateway",
-            source="git@github.com:deathtumble/terraform_modules.git//modules/api_gateway?ref=v0.4.2",
-            # source="../../../../terraform/modules/api_gateway",
-            variables={
-                "aws_region": aws_region,
-                "fqdn": shared.fqdn,
-                "zone_id": route_53_zone.id,
-                "web_acl_id": aws_wafregional_web_acl_main.id,
-                "certificate_arn": acm_cert.arn,
-                "lambda_invoke_arn": lambda_function.invoke_arn,
-            },
-        )
-
-        terraform_build_artifact_key = (
-            f"builds/{app_name}/refs/branch/{self.environment}/terraform.zip"
-        )
-        TerraformLocal(
-            self, "terraform_build_artifact_key", terraform_build_artifact_key
-        )
         build_artifact_key = (
             f"builds/{app_name}/refs/branch/{self.environment}/cloudfront.zip"
         )
-        TerraformLocal(self, "build_artifact_key", build_artifact_key)
 
         TerraformHclModule(
             self,
@@ -139,7 +102,6 @@ class ReleasableStack(TerraformStack):
             "REACT_APP_AWS_COGNITO_COOKIE_EXPIRY_MINS": 55,
             "REACT_APP_AWS_COGNITO_COOKIE_SECURE": True,
         }
-        TerraformLocal(self, "web_config", web_config)
 
         TerraformHclModule(
             self,
@@ -155,58 +117,210 @@ class ReleasableStack(TerraformStack):
             },
         )
 
-        DataAwsSecretsmanagerSecretVersion(
-            self, id="repo_token", secret_id="repo_token"
+        lambda_name = "releasable"
+
+        lambda_function = LambdaFunction(
+            scope=self,
+            id=f"{lambda_name}_lambda",
+            function_name=lambda_name,
+            runtime="provided",
+            handler="bootstrap",
+            timeout=30,
+            role=f"arn:aws:iam::{accounts.aws_account_id}:role/{app_name}_lambda_service_role",
+            s3_bucket=shared.destination_builds_bucket_name,
+            s3_key=f"builds/{app_name}/refs/branch/{self.environment}/lambda.zip",
+            lifecycle=TerraformResourceLifecycle(ignore_changes=["last_modified"]),
         )
 
-        api_gateway_id = api_gateway_module.get_string("api_id")
+        api_gateway_id = rest_api_gateway(
+            self,
+            "lambda",
+            shared.fqdn,
+            shared.web_acl_name,
+            route_53_zone,
+            acm_cert,
+            lambda_function.invoke_arn,
+        )
+
+        create_lambda_function_support(
+            self,
+            app_name,
+            aws_region,
+            api_gateway_id,
+            accounts.aws_account_id,
+        )
+
+        self.create_lambda_pipeline(
+            accounts.aws_account_id,
+            shared.destination_builds_bucket_name,
+            shared.aws_sns_topic_env_build_notification_name,
+            app_name,
+            lambda_function,
+            aws_region,
+            ns,
+            scope,
+            self.environment,
+        )
+
+    def create_lambda_pipeline(
+        self,
+        aws_account_id,
+        destination_builds_bucket_name,
+        aws_sns_topic_env_build_notification_name,
+        app_name,
+        lambda_function,
+        aws_region,
+        ns,
+        scope,
+        environment,
+    ):
+        lambda_service_role_name = f"{app_name}_lambda_updater_lambda_service_role"
+        assume_role_policy = create_assume_role_policy(
+            self, "lambda.amazonaws.com", lambda_service_role_name
+        )
+        updater_lambda_name = f"{app_name}-lambda-updater"
+
+        source_file_name = "lambda_updater.py"
+        archive_file_name = "lambda_updater.zip"
+        readable_hash = prepare_zip(ns, scope, source_file_name, archive_file_name)
+
+        lambda_function = LambdaFunction(
+            self,
+            id=f"{app_name}-lambda-updater",
+            function_name=f"{app_name}-lambda-updater",
+            handler="lambda_updater.updater",
+            runtime="python3.7",
+            role=f"arn:aws:iam::{aws_account_id}:role/{lambda_service_role_name}",
+            filename=archive_file_name,
+            source_code_hash=readable_hash,
+            timeout=30,
+            environment=LambdaFunctionEnvironment(
+                variables={
+                    "FUNCTION_NAMES": app_name,
+                    "BRANCH_NAME": environment,
+                    "APPLICATION_NAME": app_name,
+                }
+            ),
+            lifecycle=TerraformResourceLifecycle(ignore_changes=["last_modified"]),
+        )
+
+        sns_topic = DataAwsSnsTopic(
+            self,
+            id="env_build_sns_topic",
+            name=aws_sns_topic_env_build_notification_name,
+        )
+
+        SnsTopicSubscription(
+            self,
+            id="env_build_notification",
+            topic_arn=sns_topic.arn,
+            protocol="lambda",
+            endpoint=lambda_function.arn,
+        )
+
+        lambda_service_role = IamRole(
+            self,
+            id=lambda_service_role_name,
+            name=lambda_service_role_name,
+            assume_role_policy=assume_role_policy.json,
+        )
 
         LambdaPermission(
             self,
-            id="lambda_permission_api_gateway",
-            statement_id="releasable-api-gateway-access",
-            function_name="releasable",
-            principal="apigateway.amazonaws.com",
+            id=f"{app_name}-lambda-updater_lambda_permission_api_gateway",
+            statement_id=f"{app_name}-lambda-updater-api-gateway-access",
+            function_name=f"{app_name}-lambda-updater",
+            principal="sns.amazonaws.com",
             action="lambda:InvokeFunction",
-            source_arn=f"arn:aws:execute-api:eu-west-1:481652375433:{api_gateway_id}/*/*/*",
+            source_arn=sns_topic.arn,
         )
 
-        lambda_log_access = IamPolicy(
-            self,
-            id="lambda_log_access_policy",
-            name="releasable-lambda-CloudWatchWriteAccess",
-            policy=json.dumps(
-                {
-                    "Version": "2012-10-17",
-                    "Statement": [
-                        {
-                            "Action": ["logs:PutLogEvents", "logs:CreateLogStream"],
-                            "Resource": f"arn:aws:logs:{aws_region}:{accounts.aws_account_id}:log-group:/aws/lambda/{app_name}:*",
-                            "Effect": "Allow",
-                        },
-                        {
-                            "Action": [
-                                "xray:PutTraceSegments",
-                                "xray:PutTelemetryRecords",
-                            ],
-                            "Resource": "*",
-                            "Effect": "Allow",
-                        },
-                    ],
-                }
-            ),
+        log_write_access = DataAwsIamPolicyDocumentStatement(
+            sid="logWriteAccess",
+            actions=["logs:PutLogEvents", "logs:CreateLogStream"],
+            resources=[
+                f"arn:aws:logs:{aws_region}:{aws_account_id}:log-group:/aws/lambda/{updater_lambda_name}:*"
+            ],
+            effect="Allow",
         )
 
-        IamRolePolicyAttachment(
-            self,
-            id="lambda_log_access_role_policy_attachement",
-            role=lambda_service_role.name,
-            policy_arn=lambda_log_access.arn,
+        lambda_update_write_access = DataAwsIamPolicyDocumentStatement(
+            sid="lambdaUpdate",
+            actions=["lambda:*"],
+            resources=[lambda_function.arn],
+            effect="Allow",
+        )
+
+        statements = [log_write_access, lambda_update_write_access]
+
+        attach_policy(
+            self, f"{app_name}_lambda_updater", lambda_service_role, statements
         )
 
         CloudwatchLogGroup(
             self,
-            id="lambda_log_group",
-            name=f"/aws/lambda/{lambda_function.function_name}",
+            id=f"{app_name}-lambda-updater_lambda_log_group",
+            name=f"/aws/lambda/{app_name}-lambda-updater",
             retention_in_days=14,
         )
+
+
+def create_lambda_function_support(
+    stack,
+    name,
+    aws_region,
+    api_gateway_id,
+    aws_account_id,
+    extra_statements=[],
+):
+    lambda_service_role_name = f"{name}_lambda_service_role"
+    assume_role_policy = create_assume_role_policy(
+        stack, "lambda.amazonaws.com", lambda_service_role_name
+    )
+
+    lambda_service_role = IamRole(
+        stack,
+        id=lambda_service_role_name,
+        name=lambda_service_role_name,
+        assume_role_policy=assume_role_policy.json,
+    )
+
+    LambdaPermission(
+        stack,
+        id=f"{name}_lambda_permission_api_gateway",
+        statement_id=f"{name}-api-gateway-access",
+        function_name=name,
+        principal="apigateway.amazonaws.com",
+        action="lambda:InvokeFunction",
+        source_arn=f"arn:aws:execute-api:{aws_region}:{aws_account_id}:{api_gateway_id}/*/*/*",
+    )
+
+    log_write_access = DataAwsIamPolicyDocumentStatement(
+        sid="logWriteAccess",
+        actions=["logs:PutLogEvents", "logs:CreateLogStream"],
+        resources=[
+            f"arn:aws:logs:{aws_region}:{aws_account_id}:log-group:/aws/lambda/{name}:*"
+        ],
+        effect="Allow",
+    )
+
+    xray_write_access = DataAwsIamPolicyDocumentStatement(
+        sid="xrayWriteAccess",
+        actions=["xray:PutTraceSegments", "xray:PutTelemetryRecords"],
+        resources=["*"],
+        effect="Allow",
+    )
+
+    statements = extra_statements + [
+        log_write_access,
+        xray_write_access,
+    ]
+
+    attach_policy(stack, f"{name}_lambda", lambda_service_role, statements)
+
+    CloudwatchLogGroup(
+        stack,
+        id=f"{name}_lambda_log_group",
+        name=f"/aws/lambda/{name}",
+        retention_in_days=14,
+    )

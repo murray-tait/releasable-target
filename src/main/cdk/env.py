@@ -28,7 +28,13 @@ from cdktf_cdktf_provider_aws.apigateway import (
     ApiGatewayIntegration,
     ApiGatewayDomainName,
 )
-
+from cdktf_cdktf_provider_aws.iam import (
+    IamRolePolicyAttachment,
+    IamPolicy,
+    DataAwsIamPolicyDocumentStatement,
+    DataAwsIamPolicyDocument,
+    DataAwsIamPolicyDocumentStatementPrincipals,
+)
 
 def get_environment(scope: Construct, ns: str):
     environment = None
@@ -95,9 +101,7 @@ def rest_api_gateway(
     web_acl_name,
     route_53_zone,
     acm_cert,
-    aws_region,
-    aws_account_id,
-    lambda_name,
+    invoke_arn
 ):
     encoder = JSONEncoder()
 
@@ -145,7 +149,7 @@ def rest_api_gateway(
         integration_http_method="POST",
         content_handling="CONVERT_TO_TEXT",
         type="AWS_PROXY",
-        uri=f"arn:aws:apigateway:{aws_region}:lambda:path/2015-03-31/functions/arn:aws:lambda:{aws_region}:{aws_account_id}:function:{lambda_name}/invocations",
+        uri=invoke_arn,
     )
 
     deployment = ApiGatewayDeployment(
@@ -252,3 +256,42 @@ def rest_api_gateway(
     )
 
     return api_gateway.id
+
+def create_assume_role_policy(stack, service_id, lambda_service_role_name):
+    assume_role_policy=DataAwsIamPolicyDocument(
+        stack,
+        id=f"{lambda_service_role_name}_assume_role_policy",
+        statement=[
+            DataAwsIamPolicyDocumentStatement(
+                actions=["sts:AssumeRole"],
+                effect="Allow",
+                principals=[DataAwsIamPolicyDocumentStatementPrincipals(
+                    identifiers=[service_id],
+                    type="Service"
+                )]
+            )
+        ]
+    )
+    
+    return assume_role_policy
+
+def attach_policy(stack, name, lambda_service_role, statements):
+    policy_document = DataAwsIamPolicyDocument(
+        stack,
+        id=f"{name}_policy_document",
+        statement=statements,
+    )
+
+    lambda_log_access = IamPolicy(
+        stack,
+        id=f"{name}_policy",
+        name=f"{name}_policy",
+        policy=policy_document.json,
+    )
+
+    IamRolePolicyAttachment(
+        stack,
+        id=f"{name}_role_policy_attachment",
+        role=lambda_service_role.name,
+        policy_arn=lambda_log_access.arn,
+    )

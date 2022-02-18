@@ -39,6 +39,7 @@ from env import (
     create_assume_role_policy,
     prepare_zip,
 )
+from cdktf_cdktf_provider_aws.s3 import DataAwsS3Bucket
 
 
 class ReleasableStack(TerraformStack):
@@ -184,7 +185,7 @@ class ReleasableStack(TerraformStack):
         archive_file_name = "lambda_updater.zip"
         readable_hash = prepare_zip(ns, scope, source_file_name, archive_file_name)
 
-        lambda_function = LambdaFunction(
+        updater_lambda_function = LambdaFunction(
             self,
             id=f"{app_name}-lambda-updater",
             function_name=f"{app_name}-lambda-updater",
@@ -215,7 +216,7 @@ class ReleasableStack(TerraformStack):
             id="env_build_notification",
             topic_arn=sns_topic.arn,
             protocol="lambda",
-            endpoint=lambda_function.arn,
+            endpoint=updater_lambda_function.arn,
         )
 
         lambda_service_role = IamRole(
@@ -235,6 +236,10 @@ class ReleasableStack(TerraformStack):
             source_arn=sns_topic.arn,
         )
 
+        destination_builds_bucket = DataAwsS3Bucket(
+            self, id="destination_builds_bucket", bucket=destination_builds_bucket_name
+        )
+
         log_write_access = DataAwsIamPolicyDocumentStatement(
             sid="logWriteAccess",
             actions=["logs:PutLogEvents", "logs:CreateLogStream"],
@@ -246,12 +251,31 @@ class ReleasableStack(TerraformStack):
 
         lambda_update_write_access = DataAwsIamPolicyDocumentStatement(
             sid="lambdaUpdate",
-            actions=["lambda:*"],
+            actions=["lambda:UpdateFunctionCode"],
             resources=[lambda_function.arn],
             effect="Allow",
         )
 
-        statements = [log_write_access, lambda_update_write_access]
+        s3_object_read_access = DataAwsIamPolicyDocumentStatement(
+            sid="s3ObjectRead",
+            actions=["s3:GetObject"],
+            resources=[f"{destination_builds_bucket.arn}/*"],
+            effect="Allow",
+        )
+
+        s3_bucket_read_access = DataAwsIamPolicyDocumentStatement(
+            sid="s3BucketRead",
+            actions=["s3:ListBucket"],
+            resources=[destination_builds_bucket.arn],
+            effect="Allow",
+        )
+
+        statements = [
+            log_write_access,
+            lambda_update_write_access,
+            s3_object_read_access,
+            s3_bucket_read_access,
+        ]
 
         attach_policy(
             self, f"{app_name}_lambda_updater", lambda_service_role, statements

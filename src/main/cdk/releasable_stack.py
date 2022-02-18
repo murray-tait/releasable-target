@@ -1,7 +1,11 @@
 from zipfile import ZipFile
-import hashlib 
+import hashlib
 
-from cdktf_cdktf_provider_aws.lambdafunction import LambdaPermission, LambdaFunction, LambdaFunctionEnvironment
+from cdktf_cdktf_provider_aws.lambdafunction import (
+    LambdaPermission,
+    LambdaFunction,
+    LambdaFunctionEnvironment,
+)
 from cdktf_cdktf_provider_aws.iam import (
     IamRole,
     DataAwsIamPolicyDocumentStatement,
@@ -13,7 +17,12 @@ from cdktf import (
     TerraformResourceLifecycle,
 )
 from cdktf_cdktf_provider_aws.cloudwatch import CloudwatchLogGroup
-from cdktf_cdktf_provider_aws.sns import SnsTopic, SnsTopicPolicy, SnsTopicSubscription, DataAwsSnsTopic
+from cdktf_cdktf_provider_aws.sns import (
+    SnsTopic,
+    SnsTopicPolicy,
+    SnsTopicSubscription,
+    DataAwsSnsTopic,
+)
 from constructs import Construct
 
 from murraytait_cdktf.shared import Shared
@@ -27,7 +36,7 @@ from env import (
     create_backend,
     rest_api_gateway,
     attach_policy,
-    create_assume_role_policy
+    create_assume_role_policy,
 )
 
 
@@ -58,7 +67,6 @@ class ReleasableStack(TerraformStack):
         route_53_zone = DataAwsRoute53Zone(
             self, id="environment", name=shared.environment_domain_name
         )
-
 
         acm_cert = environment_certificate(
             self, self.aws_global_provider, shared.environment_domain_name
@@ -130,7 +138,7 @@ class ReleasableStack(TerraformStack):
             shared.web_acl_name,
             route_53_zone,
             acm_cert,
-            lambda_function.invoke_arn
+            lambda_function.invoke_arn,
         )
 
         create_lambda_function_support(
@@ -141,32 +149,53 @@ class ReleasableStack(TerraformStack):
             accounts.aws_account_id,
         )
 
-        self.create_lambda_pipeline(accounts.aws_account_id, shared.destination_builds_bucket_name, shared.aws_sns_topic_env_build_notification_name, app_name, lambda_function, aws_region, ns, scope, self.environment)
+        self.create_lambda_pipeline(
+            accounts.aws_account_id,
+            shared.destination_builds_bucket_name,
+            shared.aws_sns_topic_env_build_notification_name,
+            app_name,
+            lambda_function,
+            aws_region,
+            ns,
+            scope,
+            self.environment,
+        )
 
-    def create_lambda_pipeline(self, aws_account_id, destination_builds_bucket_name, aws_sns_topic_env_build_notification_name, app_name, lambda_function,aws_region, ns, scope,environment):
-        lambda_service_role_name = f"lambda_updater_lambda_service_role"
-        assume_role_policy = create_assume_role_policy(self, "lambda.amazonaws.com", lambda_service_role_name)
+    def create_lambda_pipeline(
+        self,
+        aws_account_id,
+        destination_builds_bucket_name,
+        aws_sns_topic_env_build_notification_name,
+        app_name,
+        lambda_function,
+        aws_region,
+        ns,
+        scope,
+        environment,
+    ):
+        lambda_service_role_name = f"{app_name}_lambda_updater_lambda_service_role"
+        assume_role_policy = create_assume_role_policy(
+            self, "lambda.amazonaws.com", lambda_service_role_name
+        )
         updater_lambda_name = f"{app_name}-lambda-updater"
 
         source_file_name = "lambda_updater.py"
         archive_file_name = "lambda_updater.zip"
-        zipObj = ZipFile(scope.outdir + '/stacks/' +
-                            ns + "/" + archive_file_name, "w")
+        zipObj = ZipFile(scope.outdir + "/stacks/" + ns + "/" + archive_file_name, "w")
         zipObj.write(source_file_name)
         zipObj.close()
 
-        with open(scope.outdir + '/stacks/' +
-                    ns + "/" + archive_file_name, "rb") as f:
+        with open(scope.outdir + "/stacks/" + ns + "/" + archive_file_name, "rb") as f:
             bytes = f.read()  # read entire file as bytes
             readable_hash = hashlib.sha256(bytes).hexdigest()
 
         lambda_function = LambdaFunction(
             self,
-            id="trigger_deploy",
+            id=f"{app_name}-lambda-updater",
             function_name=f"{app_name}-lambda-updater",
             handler="lambda_updater.updater",
             runtime="python3.7",
-            role=f"arn:aws:iam::{aws_account_id}:role/{app_name}-lambda-updater_lambda_service_role",
+            role=f"arn:aws:iam::{aws_account_id}:role/{lambda_service_role_name}",
             filename=archive_file_name,
             source_code_hash=readable_hash,
             timeout=30,
@@ -183,15 +212,15 @@ class ReleasableStack(TerraformStack):
         sns_topic = DataAwsSnsTopic(
             self,
             id="env_build_sns_topic",
-            name=aws_sns_topic_env_build_notification_name
+            name=aws_sns_topic_env_build_notification_name,
         )
-        
+
         SnsTopicSubscription(
             self,
             id="env_build_notification",
             topic_arn=sns_topic.arn,
             protocol="lambda",
-            endpoint=lambda_function.arn
+            endpoint=lambda_function.arn,
         )
 
         lambda_service_role = IamRole(
@@ -226,13 +255,15 @@ class ReleasableStack(TerraformStack):
             resources=[lambda_function.arn],
             effect="Allow",
         )
-            
-        statements = [log_write_access, lambda_update_write_access ]
 
-        attach_policy(self, f"{app_name}_lambda_updater", lambda_service_role, statements)
+        statements = [log_write_access, lambda_update_write_access]
+
+        attach_policy(
+            self, f"{app_name}_lambda_updater", lambda_service_role, statements
+        )
 
         CloudwatchLogGroup(
-           self,
+            self,
             id=f"{app_name}-lambda-updater_lambda_log_group",
             name=f"/aws/lambda/{app_name}-lambda-updater",
             retention_in_days=14,
@@ -248,7 +279,9 @@ def create_lambda_function_support(
     extra_statements=[],
 ):
     lambda_service_role_name = f"{name}_lambda_service_role"
-    assume_role_policy = create_assume_role_policy(stack, "lambda.amazonaws.com", lambda_service_role_name)
+    assume_role_policy = create_assume_role_policy(
+        stack, "lambda.amazonaws.com", lambda_service_role_name
+    )
 
     lambda_service_role = IamRole(
         stack,
@@ -268,25 +301,25 @@ def create_lambda_function_support(
     )
 
     log_write_access = DataAwsIamPolicyDocumentStatement(
-                sid="logWriteAccess",
-                actions=["logs:PutLogEvents", "logs:CreateLogStream"],
-                resources=[
-                    f"arn:aws:logs:{aws_region}:{aws_account_id}:log-group:/aws/lambda/{name}:*"
-                ],
-                effect="Allow",
-            )
-    
+        sid="logWriteAccess",
+        actions=["logs:PutLogEvents", "logs:CreateLogStream"],
+        resources=[
+            f"arn:aws:logs:{aws_region}:{aws_account_id}:log-group:/aws/lambda/{name}:*"
+        ],
+        effect="Allow",
+    )
+
     xray_write_access = DataAwsIamPolicyDocumentStatement(
-                sid="xrayWriteAccess",
-                actions=["xray:PutTraceSegments", "xray:PutTelemetryRecords"],
-                resources=["*"],
-                effect="Allow",
-            )
-   
+        sid="xrayWriteAccess",
+        actions=["xray:PutTraceSegments", "xray:PutTelemetryRecords"],
+        resources=["*"],
+        effect="Allow",
+    )
+
     statements = extra_statements + [
-            log_write_access,
-            xray_write_access,
-        ]
+        log_write_access,
+        xray_write_access,
+    ]
 
     attach_policy(stack, f"{name}_lambda", lambda_service_role, statements)
 

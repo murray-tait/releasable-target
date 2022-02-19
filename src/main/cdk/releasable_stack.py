@@ -152,12 +152,10 @@ class ReleasableStack(TerraformStack):
         )
 
         self.create_lambda_pipeline(
-            accounts.aws_account_id,
             shared.destination_builds_bucket_name,
             shared.aws_sns_topic_env_build_notification_name,
             app_name,
             lambda_function,
-            aws_region,
             ns,
             scope,
             self.environment,
@@ -165,36 +163,39 @@ class ReleasableStack(TerraformStack):
 
     def create_lambda_pipeline(
         self,
-        aws_account_id,
         destination_builds_bucket_name,
         aws_sns_topic_env_build_notification_name,
         app_name,
         lambda_function,
-        aws_region,
         ns,
         scope,
         environment,
     ):
-        updater_name = f"{app_name}_lambda_updater"
+        updater_lambda_name = f"{app_name}_lambda_updater"
 
-        lambda_service_role_name = f"{updater_name}_lambda_service_role"
-        print(lambda_service_role_name)
+        lambda_service_role_name = f"{updater_lambda_name}_lambda_service_role"
         assume_role_policy = create_assume_role_policy(
             self, "lambda.amazonaws.com", lambda_service_role_name
         )
-        updater_lambda_name = updater_name
 
         source_file_name = "lambda_updater.py"
         archive_file_name = "lambda_updater.zip"
         readable_hash = prepare_zip(ns, scope, source_file_name, archive_file_name)
 
+        lambda_service_role = IamRole(
+            self,
+            id=lambda_service_role_name,
+            name=lambda_service_role_name,
+            assume_role_policy=assume_role_policy.json,
+        )
+
         updater_lambda_function = LambdaFunction(
             self,
-            id=updater_name,
-            function_name=updater_name,
+            id=updater_lambda_name,
+            function_name=updater_lambda_name,
             handler="lambda_updater.updater",
             runtime="python3.7",
-            role=f"arn:aws:iam::{aws_account_id}:role/{lambda_service_role_name}",
+            role=lambda_service_role.arn,
             filename=archive_file_name,
             source_code_hash=readable_hash,
             timeout=30,
@@ -222,18 +223,11 @@ class ReleasableStack(TerraformStack):
             endpoint=updater_lambda_function.arn,
         )
 
-        lambda_service_role = IamRole(
-            self,
-            id=lambda_service_role_name,
-            name=lambda_service_role_name,
-            assume_role_policy=assume_role_policy.json,
-        )
-
         LambdaPermission(
             self,
-            id=f"{updater_name}_lambda_permission",
-            statement_id=f"{updater_name}",
-            function_name=updater_name,
+            id=f"{updater_lambda_name}_lambda_permission",
+            statement_id=f"{updater_lambda_name}",
+            function_name=updater_lambda_name,
             principal="sns.amazonaws.com",
             action="lambda:InvokeFunction",
             source_arn=sns_topic.arn,
@@ -243,12 +237,17 @@ class ReleasableStack(TerraformStack):
             self, id="destination_builds_bucket", bucket=destination_builds_bucket_name
         )
 
+        log_group = CloudwatchLogGroup(
+            self,
+            id=f"{updater_lambda_name}_lambda_log_group",
+            name=f"/aws/lambda/{updater_lambda_name}",
+            retention_in_days=14,
+        )
+
         log_write_access = DataAwsIamPolicyDocumentStatement(
             sid="logWriteAccess",
             actions=["logs:PutLogEvents", "logs:CreateLogStream"],
-            resources=[
-                f"arn:aws:logs:{aws_region}:{aws_account_id}:log-group:/aws/lambda/{updater_lambda_name}:*"
-            ],
+            resources=[f"{log_group.arn}:*"],
             effect="Allow",
         )
 
@@ -280,14 +279,7 @@ class ReleasableStack(TerraformStack):
             s3_bucket_read_access,
         ]
 
-        attach_policy(self, updater_name, lambda_service_role, statements)
-
-        CloudwatchLogGroup(
-            self,
-            id=f"{app_name}-lambda-updater_lambda_log_group",
-            name=f"/aws/lambda/{app_name}-lambda-updater",
-            retention_in_days=14,
-        )
+        attach_policy(self, updater_lambda_name, lambda_service_role, statements)
 
 
 def create_lambda_function_support(

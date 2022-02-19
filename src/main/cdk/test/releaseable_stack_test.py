@@ -10,7 +10,7 @@ import jsii
 @patch("cdk.releasable_stack.get_environment")
 @patch("cdk.releasable_stack.Accounts")
 @patch("cdk.releasable_stack.Config")
-@patch("cdk.releasable_stack.prepare_zip")
+@patch("cdk.env.prepare_zip")
 # @patch("jsii._kernel.providers.process.ProcessProvider.invoke")
 def test_happy_path(prepare_zip, Config, Accounts, get_environment):
     # Arrange
@@ -40,8 +40,8 @@ def test_happy_path(prepare_zip, Config, Accounts, get_environment):
     )
     type(mock_accounts).dns_account_id = PropertyMock(return_value="build_account_id")
     #    invoke.return_value = InvokeResponse(result=None)
-    
-    prepare_zip.return_value="abcdf"
+
+    prepare_zip.return_value = "abcdf"
 
     app = App()
 

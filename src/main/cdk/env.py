@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import os
 import json
 from json import JSONEncoder

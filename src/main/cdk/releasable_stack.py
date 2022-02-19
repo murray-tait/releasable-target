@@ -175,11 +175,14 @@ class ReleasableStack(TerraformStack):
         scope,
         environment,
     ):
-        lambda_service_role_name = f"{app_name}_lambda_updater_lambda_service_role"
+        updater_name = f"{app_name}_lambda_updater"
+
+        lambda_service_role_name = f"{updater_name}_lambda_service_role"
+        print(lambda_service_role_name)
         assume_role_policy = create_assume_role_policy(
             self, "lambda.amazonaws.com", lambda_service_role_name
         )
-        updater_lambda_name = f"{app_name}-lambda-updater"
+        updater_lambda_name = updater_name
 
         source_file_name = "lambda_updater.py"
         archive_file_name = "lambda_updater.zip"
@@ -187,8 +190,8 @@ class ReleasableStack(TerraformStack):
 
         updater_lambda_function = LambdaFunction(
             self,
-            id=f"{app_name}-lambda-updater",
-            function_name=f"{app_name}-lambda-updater",
+            id=updater_name,
+            function_name=updater_name,
             handler="lambda_updater.updater",
             runtime="python3.7",
             role=f"arn:aws:iam::{aws_account_id}:role/{lambda_service_role_name}",
@@ -228,9 +231,9 @@ class ReleasableStack(TerraformStack):
 
         LambdaPermission(
             self,
-            id=f"{app_name}-lambda-updater_lambda_permission_api_gateway",
-            statement_id=f"{app_name}-lambda-updater-api-gateway-access",
-            function_name=f"{app_name}-lambda-updater",
+            id=f"{updater_name}_lambda_permission",
+            statement_id=f"{updater_name}",
+            function_name=updater_name,
             principal="sns.amazonaws.com",
             action="lambda:InvokeFunction",
             source_arn=sns_topic.arn,
@@ -277,9 +280,7 @@ class ReleasableStack(TerraformStack):
             s3_bucket_read_access,
         ]
 
-        attach_policy(
-            self, f"{app_name}_lambda_updater", lambda_service_role, statements
-        )
+        attach_policy(self, updater_name, lambda_service_role, statements)
 
         CloudwatchLogGroup(
             self,

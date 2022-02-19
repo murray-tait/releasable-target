@@ -4,6 +4,7 @@ import json
 from json import JSONEncoder
 from zipfile import ZipFile
 import hashlib
+from base64 import b64encode
 
 from cdktf import TerraformResourceLifecycle
 from cdktf_cdktf_provider_aws.wafregional import (
@@ -262,8 +263,10 @@ def prepare_zip(ns, scope, source_file_name, archive_file_name):
 
     with open(scope.outdir + "/stacks/" + ns + "/" + archive_file_name, "rb") as f:
         bytes = f.read()
-        readable_hash = hashlib.sha256(bytes).hexdigest()
-    return readable_hash
+        sha = hashlib.sha256(bytes)
+        digest = sha.digest()
+        hash = b64encode(digest).decode()
+    return hash
 
 
 def create_assume_role_policy(stack, service_id, lambda_service_role_name):

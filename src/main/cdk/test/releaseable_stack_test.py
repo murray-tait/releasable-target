@@ -10,7 +10,7 @@ import jsii
 @patch("cdk.releasable_stack.get_environment")
 @patch("cdk.releasable_stack.Accounts")
 @patch("cdk.releasable_stack.Config")
-@patch("cdk.env.prepare_zip")
+@patch("murraytait_cdktf.env.prepare_zip")
 # @patch("jsii._kernel.providers.process.ProcessProvider.invoke")
 def test_happy_path(prepare_zip, Config, Accounts, get_environment):
     # Arrange

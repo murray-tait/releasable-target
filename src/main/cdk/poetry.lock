@@ -22,14 +22,14 @@ tests_no_zope = ["coverage[toml] (>=5.0.2)", "hypothesis", "pympler", "pytest (>
 
 [[package]]
 name = "boto3"
-version = "1.21.0"
+version = "1.21.4"
 description = "The AWS SDK for Python"
 category = "main"
 optional = false
 python-versions = ">= 3.6"
 
 [package.dependencies]
-botocore = ">=1.24.0,<1.25.0"
+botocore = ">=1.24.4,<1.25.0"
 jmespath = ">=0.7.1,<1.0.0"
 s3transfer = ">=0.5.0,<0.6.0"
 
@@ -38,7 +38,7 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.24.0"
+version = "1.24.4"
 description = "Low-level, data-driven core of boto 3."
 category = "main"
 optional = false
@@ -65,7 +65,7 @@ attrs = ">=20"
 
 [[package]]
 name = "cdktf"
-version = "0.8.6"
+version = "0.9.2"
 description = "Cloud Development Kit for Terraform"
 category = "main"
 optional = false
@@ -73,21 +73,21 @@ python-versions = ">=3.6"
 
 [package.dependencies]
 constructs = ">=10.0.25,<11.0.0"
-jsii = ">=1.50.0,<2.0.0"
+jsii = ">=1.54.0,<2.0.0"
 publication = ">=0.0.3"
 
 [[package]]
 name = "cdktf-cdktf-provider-aws"
-version = "4.0.2"
+version = "5.0.26"
 description = "Prebuilt aws Provider for Terraform CDK (cdktf)"
 category = "main"
 optional = false
 python-versions = ">=3.6"
 
 [package.dependencies]
-cdktf = ">=0.8.0,<0.9.0"
+cdktf = ">=0.9.0,<0.10.0"
 constructs = ">=10.0.0,<11.0.0"
-jsii = ">=1.46.0,<2.0.0"
+jsii = ">=1.54.0,<2.0.0"
 publication = ">=0.0.3"
 
 [[package]]
@@ -100,14 +100,14 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
 name = "constructs"
-version = "10.0.63"
+version = "10.0.68"
 description = "A programming model for software-defined state"
 category = "main"
 optional = false
 python-versions = ">=3.6"
 
 [package.dependencies]
-jsii = ">=1.53.0,<2.0.0"
+jsii = ">=1.54.0,<2.0.0"
 publication = ">=0.0.3"
 
 [[package]]
@@ -155,7 +155,7 @@ test = ["pytest (<5.4)", "pytest-cov"]
 
 [[package]]
 name = "murraytait-cdktf"
-version = "0.1.3"
+version = "0.5.1"
 description = ""
 category = "main"
 optional = false
@@ -163,10 +163,9 @@ python-versions = ">=3.8,<4.0"
 
 [package.dependencies]
 boto3 = ">=1.20.31,<2.0.0"
-cdktf = ">=0.8.6,<0.9.0"
-cdktf-cdktf-provider-aws = ">=4.0.2,<5.0.0"
+cdktf = ">=0.9.2,<0.10.0"
+cdktf-cdktf-provider-aws = ">=5.0.26,<6.0.0"
 constructs = ">=10.0.29,<11.0.0"
-pytest-mock = ">=3.6.1,<4.0.0"
 
 [[package]]
 name = "packaging"
@@ -341,7 +340,7 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "c41e2a56c463e2a7cd0fd718d6e79b93ff131b099b7f573b5a1c7d24241b04a4"
+content-hash = "b153cc28cba3dabea1358018abbca359b4c810ca5b23e7cdb4c4b7ba0735398b"
 
 [metadata.files]
 atomicwrites = [
@@ -353,32 +352,32 @@ attrs = [
     {file = "attrs-21.4.0.tar.gz", hash = "sha256:626ba8234211db98e869df76230a137c4c40a12d72445c45d5f5b716f076e2fd"},
 ]
 boto3 = [
-    {file = "boto3-1.21.0-py3-none-any.whl", hash = "sha256:25a76b7b530a124d9e526c62ff2b7da5782315195badb9a6273714898d689820"},
-    {file = "boto3-1.21.0.tar.gz", hash = "sha256:cc40566dec3f48611a82ace07b29489848e9bd35a51e3e992d1902a3c037e9fc"},
+    {file = "boto3-1.21.4-py3-none-any.whl", hash = "sha256:6ad9a2837fb89eb9084ed545af7f29a5e099db93776f1aafe5c08bc15933704a"},
+    {file = "boto3-1.21.4.tar.gz", hash = "sha256:bbe4f4ddfc13469d306f0ca5fa77441ec37ad50dc270755e93260aeafb06d3d1"},
 ]
 botocore = [
-    {file = "botocore-1.24.0-py3-none-any.whl", hash = "sha256:2bf4463513bd89817aa5d7341ed81c7c76d906e6c70672c8762d64ecf3275771"},
-    {file = "botocore-1.24.0.tar.gz", hash = "sha256:47723cef6112f451630bf2446cfd6be2782cc1d6b1b92acb12ff00797588c5f3"},
+    {file = "botocore-1.24.4-py3-none-any.whl", hash = "sha256:692fcad31733674c8faffc65da8ddc8ab4839f407ad8470c103e0e7aed9c7556"},
+    {file = "botocore-1.24.4.tar.gz", hash = "sha256:8e9ae6b718ca318b4aeeee45aa9fad5f52e882a2291d919cfa4b753928223abb"},
 ]
 cattrs = [
     {file = "cattrs-1.10.0-py3-none-any.whl", hash = "sha256:35dd9063244263e63bd0bd24ea61e3015b00272cead084b2c40d788b0f857c46"},
     {file = "cattrs-1.10.0.tar.gz", hash = "sha256:211800f725cdecedcbcf4c753bbd22d248312b37d130f06045434acb7d9b34e1"},
 ]
 cdktf = [
-    {file = "cdktf-0.8.6-py3-none-any.whl", hash = "sha256:2eeedd15f515c4b469c8bb16410ba50ae56c399bd8f80942048bdfc88c322082"},
-    {file = "cdktf-0.8.6.tar.gz", hash = "sha256:8b7ccff1a691db1817e9708380f4d0b68cad0d45c71190a04428f51e8ab658bb"},
+    {file = "cdktf-0.9.2-py3-none-any.whl", hash = "sha256:4675921c4192b6a54cc03c8c076e7ab0969e3eec813ba120777880c1b7c90eeb"},
+    {file = "cdktf-0.9.2.tar.gz", hash = "sha256:f761c7fa2e731e462a7a5c1a01dd5f3a7ba44073009eb1dd12c4064e07ffbcad"},
 ]
 cdktf-cdktf-provider-aws = [
-    {file = "cdktf-cdktf-provider-aws-4.0.2.tar.gz", hash = "sha256:972dceed61d992bdf6de8ab2189f83edc1389a6fdbd3c315b5316d30eb0e9fc7"},
-    {file = "cdktf_cdktf_provider_aws-4.0.2-py3-none-any.whl", hash = "sha256:d3a15f046f8bb82a9d0a57fcda152abbf12a6b73695567f5109a4a7656e6dfca"},
+    {file = "cdktf-cdktf-provider-aws-5.0.26.tar.gz", hash = "sha256:aa67b9aa23acf47b44cb00dcb16411a96a8669efbabd4f03bf0a52e03c7685bb"},
+    {file = "cdktf_cdktf_provider_aws-5.0.26-py3-none-any.whl", hash = "sha256:aa82d2d0ea4b63737a126c6e400cd6234d8b13878f4384c399db532ed1e9e252"},
 ]
 colorama = [
     {file = "colorama-0.4.4-py2.py3-none-any.whl", hash = "sha256:9f47eda37229f68eee03b24b9748937c7dc3868f906e8ba69fbcbdd3bc5dc3e2"},
     {file = "colorama-0.4.4.tar.gz", hash = "sha256:5941b2b48a20143d2267e95b1c2a7603ce057ee39fd88e7329b0c292aa16869b"},
 ]
 constructs = [
-    {file = "constructs-10.0.63-py3-none-any.whl", hash = "sha256:fd0d54160db2e1602d95c3dcd6cdb2ecfaa7644c3ff263d9d0f00533959993ab"},
-    {file = "constructs-10.0.63.tar.gz", hash = "sha256:ebfc08594389db8970d122eb5d33d8b91e15ed31f75690c2dfa211821bfe5f7b"},
+    {file = "constructs-10.0.68-py3-none-any.whl", hash = "sha256:5be43b2d7ffec427fb35416155f5cff8254e1e2e9ef40e6d55fa490a2e323632"},
+    {file = "constructs-10.0.68.tar.gz", hash = "sha256:a3647c576d205da2fd242e13d6d8c7e43ce129b5f7984fd59b15812818b46fd1"},
 ]
 iniconfig = [
     {file = "iniconfig-1.1.1-py2.py3-none-any.whl", hash = "sha256:011e24c64b7f47f6ebd835bb12a743f2fbe9a26d4cecaa7f53bc4f35ee9da8b3"},
@@ -397,8 +396,8 @@ mock = [
     {file = "mock-4.0.3.tar.gz", hash = "sha256:7d3fbbde18228f4ff2f1f119a45cdffa458b4c0dee32eb4d2bb2f82554bac7bc"},
 ]
 murraytait-cdktf = [
-    {file = "murraytait_cdktf-0.1.3-py3-none-any.whl", hash = "sha256:ef76ea30eb622b5ee228673de25901a1cdfd70ba152cb693c396717e442c05c1"},
-    {file = "murraytait_cdktf-0.1.3.tar.gz", hash = "sha256:5f4c8b983ed5c21cb03c02c8a8f3c2ade8b751539208636df6f0246b79704f52"},
+    {file = "murraytait_cdktf-0.5.1-py3-none-any.whl", hash = "sha256:9e283ef171f6b9f5546a5aea3a3dbc9b5ef3119b7c765d37d344c7a2120f70f6"},
+    {file = "murraytait_cdktf-0.5.1.tar.gz", hash = "sha256:fed58facc3218b74a481ac8476a3563c04ceb6e68ca9313c8db3b66602dc6e2b"},
 ]
 packaging = [
     {file = "packaging-21.3-py3-none-any.whl", hash = "sha256:ef103e05f519cdc783ae24ea4e2e0f508a9c99b2d4969652eed6a2e1ea5bd522"},

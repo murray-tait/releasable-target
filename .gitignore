@@ -41,3 +41,5 @@ src/main/cdk/modules
 src/main/cdk/cdktf.out/*
 **/__pycache__/*
 src/main/cdk/.venv/
+aws/
+awscliv2.zip

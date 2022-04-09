@@ -6,8 +6,6 @@ jobs:
   slack-notification:
     runs-on: ubuntu-latest
     steps:
-      - 
-
       - name: notification
         uses: 8398a7/action-slack@v3
         with:

@@ -11,11 +11,12 @@ jobs:
         with:
           status: custom
           fields: workflow,job,commit,repo,ref,author,took
+          mention: here
           custom_payload: |
             {
               attachments: [{
               color: '${{ job.status }}' === 'success' ? 'good' : '${{ job.status }}' === 'failure' ? 'danger' : 'warning',
-              text: `PR ${process.env.AS_REPO}`,
+              text: `@here (PR)[${process.env.GITHUB_REF}] ${process.env.AS_REPO}`,
               }]
             }
         env:

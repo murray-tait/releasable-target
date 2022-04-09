@@ -15,7 +15,7 @@ jobs:
           custom_payload: |
             {
               attachments: [{
-              text: "@here <${{ github.event.pull_request.html_url }}|PR> for `${{ github.event.pull_request.head.ref}}``: ${{ github.event.pull_request.title }}"",
+              text: "@here <${{ github.event.pull_request.html_url }}|PR> for `${{ github.event.pull_request.head.ref}}`: ${{ github.event.pull_request.title }}",
               }]
             }
         env:

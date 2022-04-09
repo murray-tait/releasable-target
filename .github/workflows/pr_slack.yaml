@@ -16,7 +16,7 @@ jobs:
             {
               attachments: [{
               color: '${{ job.status }}' === 'success' ? 'good' : '${{ job.status }}' === 'failure' ? 'danger' : 'warning',
-              text: `@here <${{ github.event.pull_request.html_url }}|PR> for `,
+              text: `@here <${{ github.event.pull_request.html_url }}|PR> for ${{ github.event.pull_request.head}} ${{ github.event.pull_request.title }}`,
               }]
             }
         env:

@@ -16,7 +16,7 @@ jobs:
             {
               attachments: [{
               color: '${{ job.status }}' === 'success' ? 'good' : '${{ job.status }}' === 'failure' ? 'danger' : 'warning',
-              text: `@here <https://github.com/deathtumble/releasable-target/pull/3|PR> ${process.env.AS_REPO}`,
+              text: `@here <https://github.com/${process.env.AS_REPO}/pull/${{ github.event.number }}|PR> for `,
               }]
             }
         env:

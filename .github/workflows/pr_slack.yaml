@@ -6,6 +6,8 @@ jobs:
   slack-notification:
     runs-on: ubuntu-latest
     steps:
+      - 
+
       - name: notification
         uses: 8398a7/action-slack@v3
         with:
@@ -16,7 +18,7 @@ jobs:
             {
               attachments: [{
               color: '${{ job.status }}' === 'success' ? 'good' : '${{ job.status }}' === 'failure' ? 'danger' : 'warning',
-              text: `@here (PR)[${process.env.GITHUB_REF}] ${process.env.AS_REPO}`,
+              text: `@here <https://github.com/deathtumble/releasable-target/pull/3|PR> ${process.env.AS_REPO}`,
               }]
             }
         env:

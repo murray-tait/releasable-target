@@ -15,7 +15,7 @@ jobs:
             {
               attachments: [{
               color: '${{ job.status }}' === 'success' ? 'good' : '${{ job.status }}' === 'failure' ? 'danger' : 'warning',
-              text: `PR ${{ repo }}`,
+              text: `PR ${process.env.AS_REPO}`,
               }]
             }
         env:

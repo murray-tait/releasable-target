@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: notification
-        uses: deathtumble/death-tumble-action-slack@v3.13.3
+        uses: deathtumble/deathtumble-action-slack@v3.13.3
         with:
           status: custom
           fields: workflow,job,commit,repo,ref,author,took

@@ -21,5 +21,5 @@ jobs:
         if: always() # Pick up events even if the job fails or is canceled.
       - name: ouput
         shell: bash
-        run: echo "thread_ts"
+        run: echo "${thread_ts}"
 

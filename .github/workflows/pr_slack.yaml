@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: notification
-        uses: deathtumble/action-slack@v3.13.4
+        uses: deathtumble/action-slack@v3.13.5
         with:
           status: custom
           fields: workflow,job,commit,repo,ref,author,took
@@ -19,4 +19,7 @@ jobs:
         env:
             SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         if: always() # Pick up events even if the job fails or is canceled.
+      - name: ouput
+        shell: bash
+        run: echo "thread_ts"
 

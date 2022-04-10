@@ -1,0 +1,25 @@
+name: Slack PR notification
+on:
+  pull_request:
+    types: [opened,reopened]
+jobs:
+  slack-notification:
+    runs-on: ubuntu-latest
+    steps:
+      - name: notification
+        uses: deathtumble/action-slack@v3.13.8
+        with:
+          status: custom
+          fields: workflow,job,commit,repo,ref,author,took
+          mention: here
+          custom_payload: |
+            {
+              text: "<!here> <${{ github.event.pull_request.html_url }}|PR> for `${{ github.event.pull_request.head.ref}}`: ${{ github.event.pull_request.title }}",
+            }
+        env:
+            SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        if: always() # Pick up events even if the job fails or is canceled.
+      - name: ouput
+        shell: bash
+        run: echo "${thread_ts}"
+
